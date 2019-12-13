@@ -32,7 +32,7 @@
 #define IDF_RECVMSG     2004            // 受信メッセージ表示用エディットボックス
 #define IDF_SCORE_PL1   2005            // 自分の得点用エディットボックス
 #define IDF_SCORE_PL2   2006            // 相手の得点用エディットボックス
-#define WINDOW_W		920				// ウィンドウの幅
+#define WINDOW_W		910				// ウィンドウの幅
 #define WINDOW_H		800             // ウィンドウの高さ
 #define MAX_ARRAY		10000			// 配列の最大要素数
 #define MAX_MESSEGE		30				// メッセージの最大要素数
@@ -77,21 +77,25 @@ int flag[MAX_ARRAY];                                // ペンダウンフラグ
 POINT pos[MAX_ARRAY];                               // 座標を格納
 HPEN colors[MAX_ARRAY];								// 使用する色
 
-int turn = 0;											//手番
-int score_Master = 0;								//マスターのスコア	
-int score_Player = 0;								//プレイヤーのスコア
+int turn=0;											//手番
+
 int score_PL1 = 0;									//PL1のスコア
 int score_PL2 = 0;									//PL2のスコア
-char rule[3][10] = { "絵のみ","絵と文字","文字のみ" };
+char rule[3][10] = {"文字のみ","絵と文字","絵のみ"};
 int card[6] = { 0,1,2,3,4 };
-int rule_num = 0;
-char card_text[5][6][30] =
+int rule_num=0;
+char card_text[10][6][30] =
 {
 	{"猫","鼠","犬","熊","狐","馬"},
 	{"テレビ","洗濯機","エアコン","冷蔵庫","電子レンジ","自動車"},
 	{"クリスマス","バレンタイン","お正月","ハロウィン","夏祭り","七夕"},
-	{"サッカー","野球","バレー","バスケ","卓球","テニス"},
+	{"サッカーボール","野球ボール","バレーボール","バスケボール","卓球ボール","テニスボール"},
 	{"キャビンアテンダント","ナース","会社員","学生","警察官","バーテンダー"},
+	{"ピザ","ハンバーガー","コーラ","ポップコーン","フライドチキン","フライドポテト"},
+	{"ケーキ", "パフェ", "プリン", "アイスクリーム", "ドーナツ", "クレープ"},
+	{"手袋","スカート","リボン","靴下","コート","スーツ"},
+	{"桃太郎","金太郎","かぐや姫","かちかち山","浦島太郎","鶴の恩返し"},
+	{"アメリカ","ロシア","ドイツ","中国","日本","イギリス"}
 };
 //  プロトタイプ宣言
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);// ウィンドウ関数
@@ -110,7 +114,6 @@ void ChatReset(HWND chatbox);
 int randAtoC();
 void rand0toi(int ary[], int size);
 int dice();
-int ctoi(char a);
 
 //  WinMain関数 (Windowsプログラム起動時に呼ばれる関数)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
@@ -171,7 +174,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 	int len = sizeof(cl_sin);
 	char host[100];
 	char buf[100];						// 受信内容を一時的に格納するバッファ
-
+	int score_Master = 0;								//親のスコア	
+	int score_Player = 0;								//子のスコア
 
 	switch (uMsg) {
 	case WM_CREATE:			// ウィンドウが生成された
@@ -274,11 +278,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 
 		SockInit(hWnd);         // ソケット初期化
 
-		rand0toi(card, 5);
 
-		hPenBlack = (HPEN)CreatePen(PS_SOLID, 3, RGB(0, 0, 0));
-		hPenRed = (HPEN)CreatePen(PS_SOLID, 3, RGB(255, 0, 0));
-		hPenWhite = (HPEN)CreatePen(PS_SOLID, 3, RGB(255, 255, 255));
+		rand0toi(card, 10);
+		hPenBlack = (HPEN)CreatePen(PS_SOLID, 3, RGB(0, 0, 0));		//黒ペン作成
+		hPenRed = (HPEN)CreatePen(PS_SOLID, 3, RGB(255, 0, 0));		//赤ペン作成
+		hPenWhite = (HPEN)CreatePen(PS_SOLID, 3, RGB(255, 255, 255));//白ペン作成
 		return 0L;
 	}
 	case WM_COMMAND:		// ボタンが押された
@@ -289,7 +293,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				return 0L;      // 接続待ち失敗
 			}
 			enable(FALSE, FALSE, FALSE, TRUE, FALSE, 0,
-				FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE);
+				FALSE, FALSE, FALSE, FALSE, FALSE ,FALSE, FALSE, FALSE);
 			return 0L;
 
 		case IDB_CONNECT:   // [接続]ボタン押下(クライアント)
@@ -300,7 +304,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				return 0L;
 			}
 			enable(FALSE, FALSE, FALSE, TRUE, FALSE, 0,
-				FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE);;
+				FALSE, FALSE, FALSE, FALSE, FALSE ,FALSE, FALSE, FALSE);;
 			return 0L;
 
 		case IDB_REJECT:    // [切断]ボタン押下
@@ -316,92 +320,92 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			}
 			phe = NULL;
 			enable(TRUE, TRUE, TRUE, FALSE, FALSE, 0,
-				FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE);
+				FALSE, FALSE, FALSE, FALSE, FALSE ,FALSE, FALSE, FALSE);
 			return 0L;
 
 		case IDB_REJECTORDER:      // [切断要請]ボタン押下
-			strcpy_s(buf, "REJECT");
-			send(sock, buf, strlen(buf) + 1, 0);
+			strcpy_s(buf, "REJECT");				// 切断の内容をバッファに保存
+			send(sock, buf, strlen(buf) + 1, 0);	// REJECTと送信
 			return 0L;
 
 		case IDB_SEND:      // [送信]ボタン押下
 			char sender[100];
 			GetWindowText(hWndSendMSG, buf, sizeof(buf) - 1);     // 送信メッセージ入力欄の内容を取得
-			sprintf_s(sender, "%s%s", "MESS", buf);
+			sprintf_s(sender,"%s%s","MESS",buf);	//送信の内容をバッファに保存
 			if (send(sock, sender, strlen(sender) + 1, 0) == SOCKET_ERROR) {    // 送信処理
 						// 送信に失敗したらエラーを表示
 				MessageBox(hWnd, TEXT("sending failed"), TEXT("Error"),
 					MB_OK | MB_ICONEXCLAMATION);
 			}
-
-			ChatReset(hWndSendMSG);
+			
+			ChatReset(hWndSendMSG);//チャットボックスのクリア
 			return 0L;
 
 		case IDB_GIVEUP:	// [ギブアップ]ボタン押下
-			strcpy_s(buf, "GIVEUP");
-			send(sock, buf, strlen(buf) + 1, 0);
-			score_Master = 1;
+			strcpy_s(buf, "GIVEUP");			// ギブアップの内容をバッファに保存
+			send(sock, buf, strlen(buf) + 1, 0);// GIVEUPと送信
+			score_Master = 1;					// 親と子の点数を１点ずつ付与
 			score_Player = 1;
-			change(score_Master, score_Player);//交代
+			change(score_Master, score_Player);	// 交代
 			return 0L;
 
 		case IDB_CORRECT:   // [正解]押下
-			strcpy_s(buf, "CORRECT");
-			send(sock, buf, strlen(buf) + 1, 0);
-			return 0L;
+			strcpy_s(buf, "CORRECT");			// 正解の内容をバッファに保存
+			send(sock, buf, strlen(buf) + 1, 0);// CORRECTと送信
+			return 0L;			
 
 		case IDB_INCORRECT: // [不正解]押下
-			strcpy_s(buf, "INCORRECT");
-			send(sock, buf, strlen(buf) + 1, 0);
+			strcpy_s(buf, "INCORRECT");			// 不正解の内容をバッファに保存
+			send(sock, buf, strlen(buf) + 1, 0);// INCORRECTと送信
 			return 0L;
 
 		case IDB_POINTOUT:  // [指摘]押下
-			strcpy_s(buf, "POINTOUT");
-			send(sock, buf, strlen(buf) + 1, 0);
+			strcpy_s(buf, "POINTOUT");			// 指摘の内容をバッファに保存
+			send(sock, buf, strlen(buf) + 1, 0);// POINTOUTと送信	
 			return 0L;
 
 		case IDB_CONSENT:   // [承諾]押下
-			strcpy_s(buf, "CONSENT");
-			send(sock, buf, strlen(buf) + 1, 0);
-			score_Master = 0;
+			strcpy_s(buf, "CONSENT");           // 承諾の内容をバッファに保存
+			send(sock, buf, strlen(buf) + 1, 0);// CONSENTと送信
+			score_Master = 0;                   // 親に0点、子に1点を付与
 			score_Player = 1;
-			change(score_Master, score_Player);//交代
+			change(score_Master, score_Player);	// 交代
 			return 0L;
 
 		case IDB_DENIAL:    // [否認]押下
-			strcpy_s(buf, "DENIAL");
-			send(sock, buf, strlen(buf) + 1, 0);
-			if (rule_num == 0) {//Aを正解
-				score_Master = 1;
+			strcpy_s(buf, "DENIAL");			// 否認の内容をバッファに保存
+			send(sock, buf, strlen(buf) + 1, 0);// DENIALと送信
+			if (rule_num == 0) {				// Aを正解
+				score_Master = 1;				// 親に1点、子に2点を付与
 				score_Player = 2;
 			}
-			else if (rule_num == 1) {//Bを正解
-				score_Master = 1;
+			else if (rule_num == 1) {			// Bを正解
+				score_Master = 1;				// 親に1点、子に3点を付与
 				score_Player = 3;
 			}
-			else if (rule_num == 2) {//Cを正解
-				score_Master = 1;
+			else if (rule_num == 2) {			// Cを正解
+				score_Master = 1;				// 親に1点、子に5点を付与
 				score_Player = 5;
 			}
-			change(score_Master, score_Player);//交代
+			change(score_Master, score_Player);	// 交代
 			return 0L;
 
 		case IDB_CHANGE:    // [交代]押下
-			strcpy_s(buf, "CHANGE");
-			send(sock, buf, strlen(buf) + 1, 0);
-			if (rule_num == 0) {//Aを正解
-				score_Master = 1;
+			strcpy_s(buf, "CHANGE");             // 交代の内容をバッファに保存
+			send(sock, buf, strlen(buf) + 1, 0); // CHANGEと送信
+			if (rule_num == 0) {                 // Aを正解
+				score_Master = 1;                // 親に1点、子に2点を付与
 				score_Player = 2;
 			}
-			else if (rule_num == 1) {//Bを正解
-				score_Master = 1;
+			else if (rule_num == 1) {            // Bを正解
+				score_Master = 1;                // 親に1点、子に3点を付与
 				score_Player = 3;
 			}
-			else if (rule_num == 2) {//Cを正解
-				score_Master = 1;
+			else if (rule_num == 2) {            // Cを正解
+				score_Master = 1;                // 親に1点、子に5点を付与
 				score_Player = 5;
 			}
-			change(score_Master, score_Player);//交代
+			change(score_Master, score_Player);  // 交代
 			return 0L;
 
 		} /* end of switch (LOWORD(wP)) */
@@ -410,24 +414,32 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 	}
 	case WM_LBUTTONDOWN:    // マウス左ボタンが押された
 	{
-		if (checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE && DrawableFlag == 1) {   // 描画領域の中なら
-			setData(0, LOWORD(lP), HIWORD(lP), hPenBlack);       // 線の始点として座標を記録
-			FXY(0, LOWORD(lP), HIWORD(lP));       // 線の始点として座標を記録
-			n++;
+		if (checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE) {  // 描画領域の中なら
+			setData(0, LOWORD(lP), HIWORD(lP), hPenBlack);    // 線の始点として座標を記録
+			FXY(0, LOWORD(lP), HIWORD(lP));                   // 線の始点として座標を記録
+			mouseFlg = FALSE;
+			if (DrawableFlag == 1) {
+				n++;
+				mouseFlg = TRUE;
+			}
 			InvalidateRect(hWnd, &d, FALSE);
-			mouseFlg = TRUE;
+
 
 		}
 		return 0L;
 	}
 	case WM_RBUTTONDOWN:    // マウス右ボタンが押された
 	{
-		if (checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE && DrawableFlag == 1) {   // 描画領域の中なら
+		if (checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE) {   // 描画領域の中なら
 			setData(0, LOWORD(lP), HIWORD(lP), hPenWhite);       // 線の始点として座標を記録
 			FXY(0, LOWORD(lP), HIWORD(lP));       // 線の始点として座標を記録
-			n++;
+			mouseFlg = FALSE;
+			if (DrawableFlag == 1) {
+				n++;
+				mouseFlg = TRUE;
+			}
 			InvalidateRect(hWnd, &d, FALSE);
-			mouseFlg = TRUE;
+
 
 		}
 		return 0L;
@@ -435,7 +447,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 	case WM_MOUSEMOVE:  // マウスポインタが移動した
 	{
 		if (wP == MK_LBUTTON) {  // 左ボタンが押されている
-			if (checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE) {		// 描画領域の中なら
+			if (checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE && DrawableFlag == 1) {		// 描画領域の中なら
 				if (mouseFlg) {										// 前回描画しているなら
 					setData(1, LOWORD(lP), HIWORD(lP), hPenBlack);   // 線の途中として座標を記録
 					FXY(1, LOWORD(lP), HIWORD(lP));					// 線の途中として座標を送信
@@ -444,18 +456,17 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 					setData(0, LOWORD(lP), HIWORD(lP), hPenBlack);   // 線の始点として座標を記録
 					FXY(0, LOWORD(lP), HIWORD(lP));					// 線の始点として座標を送信
 				}
-				mouseFlg = FALSE;
-				if (DrawableFlag == 1) {
-					n++;
-					mouseFlg = TRUE;
-				}InvalidateRect(hWnd, &d, FALSE);
+				
+				n++;
+				mouseFlg = TRUE;
+				InvalidateRect(hWnd, &d, FALSE);
 			}
 			else {                     // 描画領域の外なら
 				mouseFlg = FALSE;
 			}
 		}
-		else if (wP == MK_RBUTTON) {  // 左ボタンが押されている
-			if (checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE) {		// 描画領域の中なら
+		else if (wP == MK_RBUTTON) {  // 右ボタンが押されている
+			if (checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE && DrawableFlag == 1) {		// 描画領域の中なら
 				if (mouseFlg) {										// 前回描画しているなら
 					setData(1, LOWORD(lP), HIWORD(lP), hPenWhite);   // 線の途中として座標を記録
 					FXY(1, LOWORD(lP), HIWORD(lP));					// 線の途中として座標を送信
@@ -464,11 +475,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 					setData(0, LOWORD(lP), HIWORD(lP), hPenWhite);   // 線の始点として座標を記録
 					FXY(0, LOWORD(lP), HIWORD(lP));					// 線の始点として座標を送信
 				}
-				mouseFlg = FALSE;
-				if (DrawableFlag == 1) {
-					n++;
-					mouseFlg = TRUE;
-				}InvalidateRect(hWnd, &d, FALSE);
+				n++;
+				mouseFlg = TRUE;
+				InvalidateRect(hWnd, &d, FALSE);
 			}
 			else {                     // 描画領域の外なら
 				mouseFlg = FALSE;
@@ -500,7 +509,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 #ifndef NO_DNS
 			// ホスト名取得
 			phe = gethostbyaddr((char*)&cl_sin.sin_addr, 4, AF_INET);
-			if (phe) { SetWindowText(hWndHost, phe->h_name); }
+			if (phe) { SetWindowText(hWndHost, phe->h_name);}
 #endif  NO_DNS
 
 			// 非同期モード (受信＆切断）
@@ -514,9 +523,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				return 0L;
 			}
 			enable(FALSE, FALSE, FALSE, TRUE, TRUE, 0,
-				FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, TRUE, FALSE);
-			FlagPlayer = 1;
-			change(0, 0);
+				FALSE, TRUE, TRUE, FALSE,FALSE ,FALSE, TRUE, FALSE);
+			FlagPlayer = 1;	//親としてゲームを開始
+			change(0, 0);	//親を0点子を0点としてゲームを開始する
 			DrawableFlag = 1;
 			return 0L;
 		}/* end of case FD_ACCEPT: */
@@ -530,80 +539,78 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				MessageBox(hWnd, "WSAAsyncSelect() failed",
 					"Error", MB_OK | MB_ICONEXCLAMATION);
 				enable(TRUE, TRUE, TRUE, FALSE, FALSE, 0,
-					FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE);
+					FALSE, FALSE, FALSE, FALSE,FALSE, FALSE, FALSE, FALSE);
 				return 0L;
 			}
 			enable(FALSE, FALSE, FALSE, TRUE, TRUE, 0,
-				TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE);
-			change(0, 0);
-			DrawableFlag = 1;
+				TRUE, FALSE, FALSE, FALSE, FALSE,FALSE, TRUE, FALSE);
+			change(0, 0);		//通信親0点、子0点としてゲームを開始する
+			DrawableFlag = 1;	//お絵描きボックスを　触れるようにする
 			return 0L;
 
 		case FD_READ:									//メッセージ受信
 			char b[100];
 
 			if (recv(sock, buf, sizeof(buf) - 1, 0) != SOCKET_ERROR) { // 受信できたなら			
-				if (strncmp(buf, "MESS", 4) == 0) {
+				if (strncmp(buf, "MESS",4) == 0) {		//チャットボックスの内容が
+														//送られた場合
+					strncpy_s(b,buf+4,sizeof(buf)-4);	//4文字目以降の内容を変数bに格納
 
-					strncpy_s(b, buf + 4, sizeof(buf) - 4);
-
-					SetWindowText(hWndRecvMSG, b);
-
-				}
-				else if (strncmp(buf, "RULE", 4) == 0) {
-					strncpy_s(b, buf + 4, sizeof(buf) - 4);
-					rule_num = atoi(b);
-					SetWindowText(hWndRule, rule[rule_num]);
+					SetWindowText(hWndRecvMSG,b);		//bの内容を送信
+					
+				}else if (strncmp(buf, "RULE",4) == 0) {	//ルールが送られてきた場合
+					strncpy_s(b, buf + 4, sizeof(buf) - 4);	//4文字目以降の内容を変数bに格納
+					rule_num = atoi(b);						//bからint型に変えたものをrule_numに格納
+					SetWindowText(hWndRule, rule[rule_num]);//rule_numに対応したルールを提示する
 				}
 				else if (strcmp(buf, "REJECT") == 0) {
 					MessageBox(hWnd, "切断要請がきました。",
 						"Information", MB_OK | MB_ICONINFORMATION);
 				}
 				else if (strcmp(buf, "CORRECT") == 0) {
-					enable(FALSE, FALSE, FALSE, TRUE, TRUE, 0,
-						FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, TRUE);
-				}
-				else if (strcmp(buf, "INCORRECT") == 0) {
-					enable(FALSE, FALSE, FALSE, TRUE, TRUE, 1,
-						FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, TRUE);
-				}
+					MessageBox(hWnd,"結果は正しいです","Information", MB_OK | MB_ICONINFORMATION);
 
+					enable(FALSE, FALSE, FALSE, TRUE, TRUE, 0,
+						FALSE, FALSE, FALSE, FALSE, TRUE,FALSE, TRUE, TRUE);
+
+				}
 				else if (strcmp(buf, "POINTOUT") == 0) {
 					enable(FALSE, FALSE, FALSE, TRUE, TRUE, 0,
 						FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, TRUE, FALSE);
 
 				}
 				else if (strcmp(buf, "CHANGE") == 0 || strcmp(buf, "DENIAL") == 0) {//指摘を認めないか、
-					if (rule_num == 0) {//Aを正解
-						score_Master = 1;
+					if (rule_num == 0) {		//Aを正解
+						score_Master = 1;		//親に1点、子に2点を付与
 						score_Player = 2;
 					}
-					else if (rule_num == 1) {//Bを正解
-						score_Master = 1;
+					else if (rule_num == 1) {	//Bを正解
+						score_Master = 1;		//親に1点、子に3点を付与
 						score_Player = 3;
 					}
-					else if (rule_num == 2) {//Cを正解
-						score_Master = 1;
+					else if (rule_num == 2) {	//Cを正解
+						score_Master = 1;		//親に1点、子に5点を付与
 						score_Player = 5;
 					}
-					change(score_Master, score_Player);//交代
+					change(score_Master, score_Player);		//交代
 				}
-				else if (strcmp(buf, "CONSENT") == 0) {//指摘を承認
-					score_Master = 0;
+				else if (strcmp(buf, "CONSENT") == 0) {		//指摘を承認
+					score_Master = 0;						//親に0点、子に1点を付与
 					score_Player = 1;
-					change(score_Master, score_Player);//交代
+					change(score_Master, score_Player);		//交代
 				}
-				else if (strcmp(buf, "GIVEUP") == 0) {//ギブアップ
-					score_Master = 1;
+				else if (strcmp(buf, "GIVEUP") == 0) {		//ギブアップ
+					score_Master = 1;						//親に1点、子に1点を付与
 					score_Player = 1;
-					change(score_Master, score_Player);//交代
+					change(score_Master, score_Player);		//交代
 				}
-				else if (strcmp(buf, "POINTOUT") == 0) {//指摘が来た
+				else if (strcmp(buf, "POINTOUT") == 0) {	//指摘が来た
 					MessageBox(hWnd, "指摘点があります。",
 						"Information", MB_OK | MB_ICONINFORMATION);
 				}
-				else {
+				else {										//それ以外ならば
 					sscanf_s(buf, "%1d%03d%03d", &flag2, &x2, &y2);
+															
 					setData(flag2, x2, y2, hPenRed);
 					mouseFlg = FALSE;
 					if (DrawableFlag == 1) {
@@ -628,15 +635,15 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 	case WM_DESTROY:    // ウィンドウが破棄された
 	{
 		DeleteObject(hPenBlack);    // 黒ペン削除
-		DeleteObject(hPenRed);    // 赤ペン削除
+		DeleteObject(hPenRed);      // 赤ペン削除
 		DeleteObject(hPenWhite);    // 赤ペン削除
-		closesocket(sock);
-		PostQuitMessage(0);
+		closesocket(sock);          // ソケットを閉じる
+		PostQuitMessage(0);         // 終了処理
 		return 0L;
 	}
 	case WM_PAINT:      // 再描画
 	{
-		return OnPaint(hWnd, uMsg, wP, lP);
+		return OnPaint(hWnd, uMsg, wP, lP);  // 描画関数の呼び出し
 		return 0L;
 	}
 	default:
@@ -696,7 +703,7 @@ BOOL SockConnect(HWND hWnd, LPCSTR host)
 			"Error", MB_OK | MB_ICONEXCLAMATION);
 		return TRUE;
 	}
-
+	
 	// 接続処理
 	if (connect(sock, (LPSOCKADDR)&cl_sin, sizeof(cl_sin)) == SOCKET_ERROR) {
 		if (WSAGetLastError() != WSAEWOULDBLOCK) {
@@ -769,11 +776,10 @@ LRESULT CALLBACK OnPaint(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 	LineTo(hdc, d.left, d.top); // 左縦線
 
 	for (int i = 0; i < n; i++) {    // 線を描画
-		SelectObject(hdc, colors[i]);
+		SelectObject(hdc,colors[i]);
 		if (flag[i] == 0) {      // 開始点なら、始点を移動
 			MoveToEx(hdc, pos[i].x, pos[i].y, NULL);
-		}
-		else {             // 途中の点なら線を引く
+		}else {             // 途中の点なら線を引く
 			LineTo(hdc, pos[i].x, pos[i].y);
 		}
 	}
@@ -784,7 +790,7 @@ LRESULT CALLBACK OnPaint(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 }
 
 //  描画情報を格納
-void setData(int f, int x, int y, HPEN color)
+void setData(int f, int x, int y,HPEN color)
 {
 	flag[n] = f;
 	pos[n].x = x;
@@ -803,14 +809,14 @@ BOOL checkMousePos(int x, int y)
 }
 
 // ボタン及び描画可能情報の設定
-void enable(BOOL Host, BOOL Connect, BOOL Accept, BOOL Reject, BOOL RejectOrder, int Drow,
+void enable(BOOL Host, BOOL Connect, BOOL Accept, BOOL Reject, BOOL RejectOrder,int Draw, 
 	BOOL Giveup, BOOL Correct, BOOL InCorrect, BOOL Consent, BOOL Pointout, BOOL Denial, BOOL Send, BOOL Change) {
 	EnableWindow(hWndHost, Host);				// [HostName]
 	EnableWindow(hWndConnect, Connect);			// [接続]    
 	EnableWindow(hWndAccept, Accept);			// [接続待ち]
 	EnableWindow(hWndReject, Reject);			// [切断]    
 	EnableWindow(hWndRejectOrder, RejectOrder);	// [切断要請]
-	DrawableFlag = Drow;
+	DrawableFlag = Draw;
 	EnableWindow(hWndGiveup, Giveup);			// [ギブアップ]
 	EnableWindow(hWndCorrect, Correct);			// [正解ボタン]    
 	EnableWindow(hWndIncorrect, InCorrect);		// [不正解ボタン]
@@ -819,10 +825,6 @@ void enable(BOOL Host, BOOL Connect, BOOL Accept, BOOL Reject, BOOL RejectOrder,
 	EnableWindow(hWndDenial, Denial);			// [否認]   
 	EnableWindow(hWndSend, Send);				// [送信]  
 	EnableWindow(hWndChange, Change);			// [交代]
-}
-
-int ctoi(char a) {
-	return a;
 }
 
 // データを送信する
@@ -834,12 +836,12 @@ void FXY(int f3, int x3, int y3) {
 }
 
 int randAtoC() {
-	int A2C[] = { 0,1,2 };
-	return A2C[rand() % 3];
+	int A2C[] = {0,1,2};
+	return A2C[rand()%3];
 }
 
-void rand0toi(int ary[], int size) {
-	for (int i = 0; i < size; i++) {
+void rand0toi(int ary[],int size) {
+	for (int i = 0; i < size;i++) {
 		int j = rand() % size;
 		int t = ary[i];
 		ary[i] = ary[j];
@@ -848,18 +850,18 @@ void rand0toi(int ary[], int size) {
 }
 
 int dice() {
-	int DICE[] = { 0,1,2,3,4,5 };
+	int DICE[] = {0,1,2,3,4,5};
 	return DICE[rand() % 6];
 }
 
 //チャットボックスの内容を消去
-void ChatReset(HWND chatbox) {
+void ChatReset(HWND chatbox){
 	SetWindowText(chatbox, TEXT(""));
 	SetFocus(chatbox);
 }
 
 //手番交代
-void change(int a, int b) {
+void change(int a,int b) {
 
 	char sender[100];
 	char buf[100];
@@ -870,23 +872,23 @@ void change(int a, int b) {
 	ChatReset(hWndSendMSG);
 	ChatReset(hWndRecvMSG);
 	ChatReset(hWndQuestion);
-
-	if (FlagPlayer % 2 == 1) {
-		score_PL1 += a;
-		score_PL2 += b;
-		sprintf_s(buf, "%d", score_PL1);
-		SetWindowText(hWndScore_pl1, buf);
-		sprintf_s(buf, "%d", score_PL2);
-		SetWindowText(hWndScore_pl2, buf);
+	
+	if (FlagPlayer % 2 ==1) {              //自分が親の場合
+		score_PL1 += a;                    //親の点数aをPL1に付与
+		score_PL2 += b;                    //子の点数bをPL2に付与
+		sprintf_s(buf,"%d",score_PL1);     //PL1の点数をバッファに保存
+		SetWindowText(hWndScore_pl1,buf);  //PL1の点数を表示
+		sprintf_s(buf, "%d", score_PL2);   //PL2の点数をバッファに保存
+		SetWindowText(hWndScore_pl2, buf); //PL2の点数を表示
 
 		enable(FALSE, FALSE, FALSE, TRUE, TRUE, 1,
 			FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, TRUE, TRUE);
-		rule_num = randAtoC();
-		sprintf_s(sender, "%s%d", "RULE", rule_num);
+		rule_num=randAtoC();
+		sprintf_s (sender,"%s%d","RULE",rule_num);
 		send(sock, sender, strlen(sender) + 1, 0);
 		SetWindowText(hWndRule, rule[rule_num]);
 		SetWindowText(hWndQuestion, card_text[card[turn]][dice()]);
-
+		
 	}
 	else {
 		score_PL1 += b;
@@ -902,19 +904,4 @@ void change(int a, int b) {
 	}
 	FlagPlayer++;
 	turn++;
-}
-
-//描画領域の内容をリセット
-void PictReset() {
-	int i;
-	for (i = 0; i < MAX_ARRAY; i++) {
-		flag[i] = 0;
-		pos[i].x = 0;
-		pos[i].y = 0;
-	}
-}
-
-//
-void Eraser() {
-
 }

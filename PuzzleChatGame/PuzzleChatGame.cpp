@@ -73,6 +73,8 @@ static int DrawableFlag = 0;				// 入力 1:可能/0:不可 状態確認フラ�
 int FlagPlayer;				// 入力 1:可能/0:不可 状態確認フラグ
 int dice_num;
 int ClearFlag = 0;
+int Use_PL1 = 0;
+int Use_PL2 = 0;
 
 const RECT d = { 10, 200, 450, 700 };               // 描画領域(左上隅のx座標, 左上隅のy座標, 右下隅のx座標, 右下隅のy座標)
 
@@ -87,7 +89,7 @@ int score_PL1 = 0;									//PL1のスコア
 int score_PL2 = 0;									//PL2のスコア
 char rule[3][10] = {"絵と文字","文字のみ","絵のみ"};//ルールの内容
 int card[10] = { 0,1,2,3,4,5,6,7,8,9 };				//カード順番
-int rule_num=0;										//ルールの番号
+int rule_num;										//ルールの番号
 char card_text[10][6][30] =							//お題の書かれたカード
 {
 	{"猫","鼠","犬","熊","狐","馬"},
@@ -105,7 +107,7 @@ char card_text[10][6][30] =							//お題の書かれたカード
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);// ウィンドウ関数
 LRESULT CALLBACK OnPaint(HWND, UINT, WPARAM, LPARAM);	// 描画関数
 
-int change(int a, int b);
+int change(HWND,int a, int b);
 BOOL checkMousePos(int x, int y);						// マウスの位置がキャンパスの中かどうか判定する
 BOOL SockInit(HWND hWnd);                               // ソケット初期化
 BOOL SockAccept(HWND hWnd);                             // ソケット接続待ち
@@ -287,11 +289,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 		// 自分の得点用エディットボックス
 		hWndScore_pl1 = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-			WS_CHILD | WS_VISIBLE | ES_READONLY, 720, 100, 25, 25,
+			WS_CHILD | WS_VISIBLE | ES_READONLY, 720, 100, 50, 25,
 			hWnd, (HMENU)IDF_SCORE_PL1, NULL, NULL);
 		// 相手の得点用エディットボックス
 		hWndScore_pl2 = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-			WS_CHILD | WS_VISIBLE | ES_READONLY, 835, 100, 25, 25,
+			WS_CHILD | WS_VISIBLE | ES_READONLY, 835, 100, 50, 25,
 			hWnd, (HMENU)IDF_SCORE_PL2, NULL, NULL);
 
 		SockInit(hWnd);         // ソケット初期化
@@ -360,12 +362,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			score_Player = 1;
 			MessageBox(hWnd, "ギブアップしました。",
 				"Information", MB_OK | MB_ICONINFORMATION);
-			change(score_Master, score_Player);	// 交代
+			change(hWnd,score_Master, score_Player);	// 交代
 			return 0L;
 
 		case IDB_CORRECT:   // [正解]押下
 			strcpy_s(buf, "CORRECT");			// 正解の内容をバッファに保存
-			sprintf_s(sender, "%s%s", "CORRECT", card_text[card[turn]][dice_num]);
+			sprintf_s(sender, "%s%s%s", "CORRECT","答え:", card_text[card[turn-1]][dice_num]);
 			send(sock, sender, strlen(sender) + 1, 0);
 			enable_pause();
 			return 0L;	
@@ -393,43 +395,43 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			send(sock, buf, strlen(buf) + 1, 0);// CONSENTと送信
 			score_Master = 0;                   // 親に0点、子に1点を付与
 			score_Player = 1;
-			change(score_Master, score_Player);	// 交代
+			change(hWnd, score_Master, score_Player);	// 交代
 			return 0L;
 
 		case IDB_DENIAL:    // [否認]押下
 			strcpy_s(buf, "DENIAL");			// 否認の内容をバッファに保存
 			send(sock, buf, strlen(buf) + 1, 0);// DENIALと送信
-			if (rule_num == 0) {				// Aを正解
-				score_Master = 1;				// 親に1点、子に2点を付与
+			if (rule_num == 0) {		//Aを正解
+				score_Master = 1;		//親に1点、子に2点を付与
 				score_Player = 2;
 			}
-			else if (rule_num == 1) {			// Bを正解
-				score_Master = 1;				// 親に1点、子に3点を付与
+			else if (rule_num == 1) {	//Bを正解
+				score_Master = 1;		//親に1点、子に3点を付与
 				score_Player = 3;
 			}
-			else if (rule_num == 2) {			// Cを正解
-				score_Master = 1;				// 親に1点、子に5点を付与
+			else if (rule_num == 2) {	//Cを正解
+				score_Master = 1;		//親に1点、子に5点を付与
 				score_Player = 5;
 			}
-			change(score_Master, score_Player);	// 交代
+			change(hWnd,score_Master, score_Player);	// 交代
 			return 0L;
 
 		case IDB_CHANGE:    // [交代]押下
 			strcpy_s(buf, "CHANGE");             // 交代の内容をバッファに保存
 			send(sock, buf, strlen(buf) + 1, 0); // CHANGEと送信
-			if (rule_num == 0) {                 // Aを正解
-				score_Master = 1;                // 親に1点、子に2点を付与
+			if (rule_num == 0) {		//Aを正解
+				score_Master = 1;		//親に1点、子に2点を付与
 				score_Player = 2;
 			}
-			else if (rule_num == 1) {            // Bを正解
-				score_Master = 1;                // 親に1点、子に3点を付与
+			else if (rule_num == 1) {	//Bを正解
+				score_Master = 1;		//親に1点、子に3点を付与
 				score_Player = 3;
 			}
-			else if (rule_num == 2) {            // Cを正解
-				score_Master = 1;                // 親に1点、子に5点を付与
+			else if (rule_num == 2) {	//Cを正解
+				score_Master = 1;		//親に1点、子に5点を付与
 				score_Player = 5;
 			}
-			change(score_Master, score_Player);  // 交代
+			change(hWnd, score_Master, score_Player);  // 交代
 			return 0L;
 
 		} /* end of switch (LOWORD(wP)) */
@@ -534,6 +536,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				enable_standby();
 				return 0L;
 			}
+			Use_PL1 = 1;
+			Use_PL2 = 0;
 			FlagPlayer = 1;	//親としてゲームを開始
 			game_start();	//親を0点子を0点としてゲームを開始する
 			return 0L;
@@ -550,6 +554,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				enable_standby();
 				return 0L;
 			}
+
+			Use_PL1 = 0;
+			Use_PL2 = 1;
 			game_start();		//通信親0点、子0点としてゲームを開始する
 			return 0L;
 
@@ -585,6 +592,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 					return 0L;
 				}
 				else if (strcmp(buf, "POINTOUT") == 0) {
+					MessageBox(hWnd, "指摘点があります！",
+						"Information", MB_OK | MB_ICONINFORMATION);
 					enable_pointout_master();
 					return 0L;
 
@@ -594,7 +603,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 					InvalidateRect(hWnd, &d, TRUE);
 					return 0L;
 				}
-				else if (strcmp(buf, "CHANGE") == 0 || strcmp(buf, "DENIAL") == 0) {//指摘を認めないか、
+				else if (strcmp(buf, "CHANGE") == 0) {//指摘を認めないか、
 					if (rule_num == 0) {		//Aを正解
 						score_Master = 1;		//親に1点、子に2点を付与
 						score_Player = 2;
@@ -607,23 +616,41 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 						score_Master = 1;		//親に1点、子に5点を付与
 						score_Player = 5;
 					}
-					change(score_Master, score_Player);		//交代
+					change(hWnd, score_Master, score_Player);		//交代
+					return 0L;
+				}
+				else if (strcmp(buf, "DENIAL") == 0) {
+					if (rule_num == 0) {		//Aを正解
+						score_Master = 1;		//親に1点、子に2点を付与
+						score_Player = 2;
+					}
+					else if (rule_num == 1) {	//Bを正解
+						score_Master = 1;		//親に1点、子に3点を付与
+						score_Player = 3;
+					}
+					else if (rule_num == 2) {	//Cを正解
+						score_Master = 1;		//親に1点、子に5点を付与
+						score_Player = 5;
+					}
+					change(hWnd, score_Master, score_Player);		//交代
 					return 0L;
 				}
 				else if (strcmp(buf, "CONSENT") == 0) {		//指摘を承認
 					score_Master = 0;						//親に0点、子に1点を付与
 					score_Player = 1;
-					change(score_Master, score_Player);		//交代
+					change(hWnd, score_Master, score_Player);		//交代
 					return 0L;
 				}
 				else if (strcmp(buf, "GIVEUP") == 0) {		//ギブアップ
 					score_Master = 1;						//親に1点、子に1点を付与
 					score_Player = 1;
-					change(score_Master, score_Player);		//交代
+					MessageBox(hWnd, "相手がギブアップしました",
+						"Information", MB_OK | MB_ICONINFORMATION);
+					change(hWnd, score_Master, score_Player);		//交代
 					return 0L;
 				}
 				else if (strcmp(buf, "POINTOUT") == 0) {	//指摘が来た
-					MessageBox(hWnd, "指摘点があります。",
+					MessageBox(hWnd, "指摘点があります！",
 						"Information", MB_OK | MB_ICONINFORMATION);
 					return 0L;
 				}
@@ -1047,9 +1074,6 @@ void game_start() {
 	char sender[100];
 	char buf[100];
 
-	rand0toi(card, 10);					//カード順番を設定する
-
-	rule_num = randAtoC();
 	ChatReset(hWndSendMSG);
 	ChatReset(hWndRecvMSG);
 	ChatReset(hWndQuestion);
@@ -1064,6 +1088,7 @@ void game_start() {
 
 	if (FlagPlayer % 2 == 1) {              //自分が親の場合
 		enable_master();
+		rand0toi(card, 10);					//カード順番を設定する
 		rule_num = randAtoC();
 		sprintf_s(sender, "%s%d", "RULE", rule_num);
 		send(sock, sender, strlen(sender) + 1, 0);
@@ -1084,6 +1109,7 @@ void game_start() {
 		}
 	}
 	else {
+		rand0toi(card, 10);					//カード順番を設定する
 		enable_player();
 	}
 	FlagPlayer++;
@@ -1091,42 +1117,77 @@ void game_start() {
 }
 
 //手番交代
-int change(int a,int b) {
+int change(HWND hWnd,int a,int b) {
 
 	char sender[100];
 	char buf[100];
 
-	rule_num = randAtoC();
 	ChatReset(hWndSendMSG);
 	ChatReset(hWndRecvMSG);
 	ChatReset(hWndQuestion);
 
-	if (turn == 10) {
-		score_PL1 += a;                    //親の点数aをPL1に付与
-		score_PL2 += b;                    //子の点数bをPL2に付与
-		sprintf_s(buf, "%d", score_PL1);     //PL1の点数をバッファに保存
-		SetWindowText(hWndScore_pl1, buf);  //PL1の点数を表示
-		sprintf_s(buf, "%d", score_PL2);   //PL2の点数をバッファに保存
-		SetWindowText(hWndScore_pl2, buf); //PL2の点数を表示
-		
-		enable_end();
-		return 0;
-	}
-
 	if (FlagPlayer % 2 ==1) {              //自分が親の場合
-		score_PL1 += b;                    //親の点数aをPL1に付与
-		score_PL2 += a;                    //子の点数bをPL2に付与
-		sprintf_s(buf,"%d",score_PL1);     //PL1の点数をバッファに保存
-		SetWindowText(hWndScore_pl1,buf);  //PL1の点数を表示
-		sprintf_s(buf, "%d", score_PL2);   //PL2の点数をバッファに保存
-		SetWindowText(hWndScore_pl2, buf); //PL2の点数を表示
+		if (Use_PL1 == 1) {
+			score_PL1 += b;                    //親の点数aをPL1に付与
+			score_PL2 += a;                    //子の点数bをPL2に付与
+			sprintf_s(buf, "%d", score_PL1);     //PL1の点数をバッファに保存
+			SetWindowText(hWndScore_pl1, buf);  //PL1の点数を表示
+			sprintf_s(buf, "%d", score_PL2);   //PL2の点数をバッファに保存
+			SetWindowText(hWndScore_pl2, buf); //PL2の点数を表示
+		}
+		else if (Use_PL2 == 1) {
+			score_PL1 += a;                    //親の点数aをPL1に付与
+			score_PL2 += b;                    //子の点数bをPL2に付与
+			sprintf_s(buf, "%d", score_PL1);     //PL1の点数をバッファに保存
+			SetWindowText(hWndScore_pl1, buf);  //PL1の点数を表示
+			sprintf_s(buf, "%d", score_PL2);   //PL2の点数をバッファに保存
+			SetWindowText(hWndScore_pl2, buf); //PL2の点数を表示
+		}
+		
+		if (turn == 3) {
+			if (Use_PL1 == 1) {
+				if (score_PL1 < score_PL2) {
+					MessageBox(hWnd, "YOU WIN!!\n親の勝ちです！",
+						"Information", MB_OK | MB_ICONINFORMATION);
+				}
+				else if (score_PL1 > score_PL2) {
+					MessageBox(hWnd, "YOU LOSE!!\n子の勝ちです！",
+						"Information", MB_OK | MB_ICONINFORMATION);
+				}
+				else if (score_PL1 == score_PL2) {
+					MessageBox(hWnd, "引き分けです！",
+						"Information", MB_OK | MB_ICONINFORMATION);
+				}
 
+			}
+			else if (Use_PL2 == 1) {
+				if (score_PL1 > score_PL2) {
+					MessageBox(hWnd, "YOU LOSE!!\n親の勝ちです！",
+						"Information", MB_OK | MB_ICONINFORMATION);
+				}
+				else if (score_PL1 < score_PL2) {
+					MessageBox(hWnd, "YOU WIN!!\n子の勝ちです！",
+						"Information", MB_OK | MB_ICONINFORMATION);
+				}
+				else if (score_PL1 == score_PL2) {
+					MessageBox(hWnd, "引き分けです！",
+						"Information", MB_OK | MB_ICONINFORMATION);
+				}
+
+			}
+			FlagPlayer = 0;
+			turn = 0;
+			enable_end();
+			return 0;
+		}
+		
+		rule_num = randAtoC();
+		dice_num = dice();
 		enable_master();
-		rule_num=randAtoC();
 		sprintf_s (sender,"%s%d","RULE",rule_num);
 		send(sock, sender, strlen(sender) + 1, 0);
 		SetWindowText(hWndRule, rule[rule_num]);
-		SetWindowText(hWndQuestion, card_text[card[turn]][dice()]);
+		SetWindowText(hWndQuestion, card_text[card[turn]][dice_num]);
 		if (rule_num == 0) {
 			EnableWindow(hWndSendMSG, TRUE);
 			EnableWindow(hWndSend, TRUE);
@@ -1139,19 +1200,65 @@ int change(int a,int b) {
 		else if (rule_num == 2) {
 			DrawableFlag = 1;
 		}
+		
 	}
-	else {
-		score_PL1 += a;
-		score_PL2 += b;
-		sprintf_s(buf, "%d", score_PL1);
-		SetWindowText(hWndScore_pl1, buf);
-		sprintf_s(buf, "%d", score_PL2);
-		SetWindowText(hWndScore_pl2, buf);
+	else if(FlagPlayer % 2 == 0) {
+		if (Use_PL1 == 1) {
+			score_PL1 += a;                    //親の点数aをPL1に付与
+			score_PL2 += b;                    //子の点数bをPL2に付与
+			sprintf_s(buf, "%d", score_PL1);     //PL1の点数をバッファに保存
+			SetWindowText(hWndScore_pl1, buf);  //PL1の点数を表示
+			sprintf_s(buf, "%d", score_PL2);   //PL2の点数をバッファに保存
+			SetWindowText(hWndScore_pl2, buf); //PL2の点数を表示
+		}
+		else if (Use_PL2 == 1) {
+			score_PL1 += b;                    //親の点数aをPL1に付与
+			score_PL2 += a;                    //子の点数bをPL2に付与
+			sprintf_s(buf, "%d", score_PL1);     //PL1の点数をバッファに保存
+			SetWindowText(hWndScore_pl1, buf);  //PL1の点数を表示
+			sprintf_s(buf, "%d", score_PL2);   //PL2の点数をバッファに保存
+			SetWindowText(hWndScore_pl2, buf); //PL2の点数を表示
+		}
+		if (turn == 3) {
+			if (Use_PL1 == 1) {
+				if (score_PL1 < score_PL2) {
+					MessageBox(hWnd, "YOU WIN!!\n親の勝ちです！",
+						"Information", MB_OK | MB_ICONINFORMATION);
+				}
+				else if (score_PL1 > score_PL2) {
+					MessageBox(hWnd, "YOU LOSE!!\n子の勝ちです！",
+						"Information", MB_OK | MB_ICONINFORMATION);
+				}
+				else if (score_PL1 == score_PL2) {
+					MessageBox(hWnd, "引き分けです！",
+						"Information", MB_OK | MB_ICONINFORMATION);
+				}
 
+			}
+			else if (Use_PL2 == 1) {
+				if (score_PL1 > score_PL2) {
+					MessageBox(hWnd, "YOU LOSE!!\n親の勝ちです！",
+						"Information", MB_OK | MB_ICONINFORMATION);
+				}
+				else if (score_PL1 < score_PL2) {
+					MessageBox(hWnd, "YOU WIN!!\n子の勝ちです！",
+						"Information", MB_OK | MB_ICONINFORMATION);
+				}
+				else if (score_PL1 == score_PL2) {
+					MessageBox(hWnd, "引き分けです！",
+						"Information", MB_OK | MB_ICONINFORMATION);
+				}
+
+			}
+			FlagPlayer = 0;
+			turn = 0;
+			enable_end();
+			return 0;
+		}
 		enable_player();
-
 	}
 
+	
 	FlagPlayer++;
 	turn++;
 	return 0;

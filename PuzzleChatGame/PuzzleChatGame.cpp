@@ -914,7 +914,7 @@ void PictReset() {
 	}
 }
 
-//消しゴム
+//
 void Eraser() {
 
 }

@@ -48,7 +48,6 @@ HOSTENT* phe;							// HOSTENT構造体
 
 HPEN hPenBlack;							// 黒ペン
 HPEN hPenRed;							// 赤ペン
-HPEN hPenWhite;							// 白ペン
 
 static HWND hWndHost;                       // ホスト名入力用エディットボックス
 static HWND hWndQuestion;                   // お題表示用エディットボックス
@@ -69,12 +68,15 @@ static HWND hWndDenial;						// [否認]ボタン
 static HWND hWndChange;						// [交代]ボタン
 static HWND hWndSend;                       // [送信]ボタン
 static HWND hWndClear;                       // ホスト名入力用エディットボックス
+
 static int DrawableFlag = 0;				// 入力 1:可能/0:不可 状態確認フラグ
 int FlagPlayer;				// 入力 1:可能/0:不可 状態確認フラグ
+int Use_PL = 0;
+int score_PL1 = 0;									//PL1のスコア
+int score_PL2 = 0;									//PL2のスコア
+int turn = 0;											//手番
 int dice_num;
-int ClearFlag = 0;
-int Use_PL1 = 0;
-int Use_PL2 = 0;
+int rule_num;										//ルールの番号
 
 const RECT d = { 10, 200, 450, 700 };               // 描画領域(左上隅のx座標, 左上隅のy座標, 右下隅のx座標, 右下隅のy座標)
 
@@ -83,13 +85,8 @@ int flag[MAX_ARRAY];                                // ペンダウンフラグ
 POINT pos[MAX_ARRAY];                               // 座標を格納
 HPEN colors[MAX_ARRAY];								// 使用する色
 
-int turn=0;											//手番
-
-int score_PL1 = 0;									//PL1のスコア
-int score_PL2 = 0;									//PL2のスコア
 char rule[3][10] = {"絵と文字","文字のみ","絵のみ"};//ルールの内容
 int card[10] = { 0,1,2,3,4,5,6,7,8,9 };				//カード順番
-int rule_num;										//ルールの番号
 char card_text[10][6][30] =							//お題の書かれたカード
 {
 	{"猫","鼠","犬","熊","狐","馬"},
@@ -106,19 +103,24 @@ char card_text[10][6][30] =							//お題の書かれたカード
 //  プロトタイプ宣言
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);// ウィンドウ関数
 LRESULT CALLBACK OnPaint(HWND, UINT, WPARAM, LPARAM);	// 描画関数
+LRESULT CALLBACK ClearPaint(HWND, UINT, WPARAM, LPARAM);	// 描画関数
 
-int change(HWND,int a, int b);
 BOOL checkMousePos(int x, int y);						// マウスの位置がキャンパスの中かどうか判定する
-BOOL SockInit(HWND hWnd);                               // ソケット初期化
-BOOL SockAccept(HWND hWnd);                             // ソケット接続待ち
-BOOL SockConnect(HWND hWnd, LPCSTR host);               // ソケット接続
 void setData(int flag, int x, int y, HPEN color);       // 描画情報を入れる
 void FXY(int f, int x, int y);
 void ChatReset(HWND chatbox);
+
 int randAtoC();
-void game_start();
 void rand0toi(int ary[], int size);
 int dice();
+
+void game_start(HWND hWnd);
+int change(HWND, int a, int b);
+int score_judge(HWND hWnd);
+
+BOOL SockInit(HWND hWnd);                               // ソケット初期化
+BOOL SockAccept(HWND hWnd);                             // ソケット接続待ち
+BOOL SockConnect(HWND hWnd, LPCSTR host);               // ソケット接続
 
 void enable_master();
 void enable_player();
@@ -289,17 +291,16 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 		// 自分の得点用エディットボックス
 		hWndScore_pl1 = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-			WS_CHILD | WS_VISIBLE | ES_READONLY, 720, 100, 50, 25,
+			WS_CHILD | WS_VISIBLE | ES_READONLY, 720, 25, 50, 25,
 			hWnd, (HMENU)IDF_SCORE_PL1, NULL, NULL);
 		// 相手の得点用エディットボックス
 		hWndScore_pl2 = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-			WS_CHILD | WS_VISIBLE | ES_READONLY, 835, 100, 50, 25,
+			WS_CHILD | WS_VISIBLE | ES_READONLY, 835, 25, 50, 25,
 			hWnd, (HMENU)IDF_SCORE_PL2, NULL, NULL);
 
 		SockInit(hWnd);         // ソケット初期化
 		hPenBlack	= (HPEN)CreatePen(PS_SOLID, 3, RGB(0, 0, 0));		//黒ペン作成
 		hPenRed		= (HPEN)CreatePen(PS_SOLID, 3, RGB(255, 0, 0));		//赤ペン作成
-		hPenWhite	= (HPEN)CreatePen(PS_SOLID, 3, RGB(255, 255, 255));	//白ペン作成
 		return 0L;
 	}
 	case WM_COMMAND:		// ボタンが押された
@@ -375,7 +376,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 		case IDB_CLEAR:   // [クリア]押下
 			strcpy_s(buf, "CLEAR");			// クリアの内容をバッファに保存
 			send(sock, buf, strlen(buf) + 1, 0);
-			ClearFlag = 1;
+			ClearPaint(hWnd, uMsg, wP, lP);
 			InvalidateRect(hWnd, &d, TRUE);
 			return 0L;
 
@@ -440,7 +441,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 	}
 	case WM_LBUTTONDOWN:    // マウス左ボタンが押された
 	{
-		if (checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE && DrawableFlag==1) {  // 描画領域の中なら
+		if ((checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE )&& (DrawableFlag==1)) {  // 描画領域の中なら
 			setData(0, LOWORD(lP), HIWORD(lP), hPenBlack);    // 線の始点として座標を記録
 			FXY(0, LOWORD(lP), HIWORD(lP));                   // 線の始点として座標を記録
 			mouseFlg = TRUE;
@@ -449,21 +450,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 		}
 		return 0L;
 	}
-	case WM_RBUTTONDOWN:    // マウス右ボタンが押された
-	{
-		if (checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE && DrawableFlag==1) {   // 描画領域の中なら
-			setData(0, LOWORD(lP), HIWORD(lP), hPenWhite);       // 線の始点として座標を記録
-			FXY(0, LOWORD(lP), HIWORD(lP));       // 線の始点として座標を記録
-			n++;
-			mouseFlg = TRUE;
-			InvalidateRect(hWnd, &d, FALSE);
-		}
-		return 0L;
-	}
+	
 	case WM_MOUSEMOVE:  // マウスポインタが移動した
 	{
 		if (wP == MK_LBUTTON) {  // 左ボタンが押されている
-			if (checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE && DrawableFlag == 1) {		// 描画領域の中なら
+			if ((checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE )&&( DrawableFlag == 1)) {		// 描画領域の中なら
 				if (mouseFlg) {										// 前回描画しているなら
 					setData(1, LOWORD(lP), HIWORD(lP), hPenBlack);   // 線の途中として座標を記録
 					FXY(1, LOWORD(lP), HIWORD(lP));					// 線の途中として座標を送信
@@ -481,24 +472,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				mouseFlg = FALSE;
 			}
 		}
-		else if (wP == MK_RBUTTON) {  // 右ボタンが押されている
-			if (checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE && DrawableFlag == 1) {		// 描画領域の中なら
-				if (mouseFlg) {										// 前回描画しているなら
-					setData(1, LOWORD(lP), HIWORD(lP), hPenWhite);   // 線の途中として座標を記録
-					FXY(1, LOWORD(lP), HIWORD(lP));					// 線の途中として座標を送信
-				}
-				else {												// 前回描画していないなら
-					setData(0, LOWORD(lP), HIWORD(lP), hPenWhite);   // 線の始点として座標を記録
-					FXY(0, LOWORD(lP), HIWORD(lP));					// 線の始点として座標を送信
-				}
-				n++;
-				mouseFlg = TRUE;
-				InvalidateRect(hWnd, &d, FALSE);
-			}
-			else {                     // 描画領域の外なら
-				mouseFlg = FALSE;
-			}
-		}
+		
 
 		return 0L;
 	}
@@ -536,10 +510,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				enable_standby();
 				return 0L;
 			}
-			Use_PL1 = 1;
-			Use_PL2 = 0;
+			Use_PL = 1;
 			FlagPlayer = 1;	//親としてゲームを開始
-			game_start();	//親を0点子を0点としてゲームを開始する
+			game_start(hWnd);	//親を0点子を0点としてゲームを開始する
 			return 0L;
 		}/* end of case FD_ACCEPT: */
 
@@ -555,9 +528,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				return 0L;
 			}
 
-			Use_PL1 = 0;
-			Use_PL2 = 1;
-			game_start();		//通信親0点、子0点としてゲームを開始する
+			Use_PL = 0;
+			game_start(hWnd);		//通信親0点、子0点としてゲームを開始する
 			return 0L;
 
 		case FD_READ:									//メッセージ受信
@@ -599,7 +571,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 
 				}
 				else if (strcmp(buf, "CLEAR") == 0) {
-					ClearFlag = 1;
+					ClearPaint(hWnd, uMsg, wP, lP);
 					InvalidateRect(hWnd, &d, TRUE);
 					return 0L;
 				}
@@ -683,7 +655,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 	{
 		DeleteObject(hPenBlack);    // 黒ペン削除
 		DeleteObject(hPenRed);      // 赤ペン削除
-		DeleteObject(hPenWhite);    // 赤ペン削除
 		closesocket(sock);          // ソケットを閉じる
 		PostQuitMessage(0);         // 終了処理
 		return 0L;
@@ -699,6 +670,244 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 	}
 	}/* end of switch (uMsg) */
 }
+
+
+//  描画関数
+LRESULT CALLBACK OnPaint(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
+{
+	HDC hdc;
+	PAINTSTRUCT ps;
+
+	hdc = BeginPaint(hWnd, &ps);
+
+	// 描画領域の初期化
+	MoveToEx(hdc, d.left, d.top, NULL);
+	LineTo(hdc, d.right, d.top);    // 上横線
+	LineTo(hdc, d.right, d.bottom); // 右縦線
+	LineTo(hdc, d.left, d.bottom);  // 下横線
+	LineTo(hdc, d.left, d.top); // 左縦線
+	
+	for (int i = 0; i < n; i++) {    // 線を描画
+		SelectObject(hdc, colors[i]);
+		if (flag[i] == 0) {      // 開始点なら、始点を移動
+			MoveToEx(hdc, pos[i].x, pos[i].y, NULL);
+		}
+		else {             // 途中の点なら線を引く
+			LineTo(hdc, pos[i].x, pos[i].y);
+		}
+	}
+
+	EndPaint(hWnd, &ps);
+
+	return 0L;
+}
+
+LRESULT CALLBACK ClearPaint(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
+{
+	HDC hdc;
+	PAINTSTRUCT ps;
+
+	hdc = BeginPaint(hWnd, &ps);
+
+	// 描画領域の初期化
+	MoveToEx(hdc, d.left, d.top, NULL);
+	LineTo(hdc, d.right, d.top);    // 上横線
+	LineTo(hdc, d.right, d.bottom); // 右縦線
+	LineTo(hdc, d.left, d.bottom);  // 下横線
+	LineTo(hdc, d.left, d.top); // 左縦線
+
+	for (int i = 0; i < n; i++) {    // 線を描画
+		flag[i] = 0;
+		pos[i].x = 0;
+		pos[i].y = 0;
+		colors[i] = NULL;
+	}
+	
+	n = 0;
+
+	EndPaint(hWnd, &ps);
+
+	return 0L;
+}
+
+//  描画情報を格納
+void setData(int f, int x, int y,HPEN color)
+{
+	flag[n] = f;
+	pos[n].x = x;
+	pos[n].y = y;
+	colors[n] = color;
+}
+
+//  マウスの位置がキャンパスの中かどうか判定する
+BOOL checkMousePos(int x, int y)
+{
+	if (x >= d.left && x <= d.right
+		&& y >= d.top && y <= d.bottom) {
+		return TRUE;
+	}
+	return FALSE;
+}
+
+// データを送信する
+void FXY(int f3, int x3, int y3) {
+	char buf[9];                  // 送信内容を一時的に格納するバッファ
+
+	sprintf_s(buf, "%1d%03d%03d", f3, x3, y3);
+	send(sock, buf, strlen(buf) + 1, 0);
+}
+
+int randAtoC() {
+	int A2C[] = {0,1,2};
+	return A2C[rand()%3];
+}
+
+void rand0toi(int ary[],int size) {
+	for (int i = 0; i < size;i++) {
+		int j = rand() % size;
+		int t = ary[i];
+		ary[i] = ary[j];
+		ary[j] = t;
+	}
+}
+
+int dice() {
+	int DICE[] = {0,1,2,3,4,5};
+	return DICE[rand() % 6];
+}
+
+//チャットボックスの内容を消去
+void ChatReset(HWND chatbox){
+	SetWindowText(chatbox, TEXT(""));
+	SetFocus(chatbox);
+}
+
+void set_score(int x,int y) {
+	char buf[100];
+
+	score_PL1 += x;                    //親の点数aをPL1に付与
+	score_PL2 += y;                    //子の点数bをPL2に付与
+	sprintf_s(buf, "%d", score_PL1);     //PL1の点数をバッファに保存
+	SetWindowText(hWndScore_pl1, buf);  //PL1の点数を表示
+	sprintf_s(buf, "%d", score_PL2);   //PL2の点数をバッファに保存
+	SetWindowText(hWndScore_pl2, buf); //PL2の点数を表示
+}
+
+void game_start(HWND hWnd) {
+
+	turn = 0;
+
+	rand0toi(card, 10);					//カード順番を設定する
+
+	change(hWnd,0,0);
+
+}
+
+//手番交代
+int change(HWND hWnd, int a, int b) {
+
+	char buf[100];
+
+	ChatReset(hWndSendMSG);
+	ChatReset(hWndRecvMSG);
+	ChatReset(hWndQuestion);
+
+	if (FlagPlayer % 2 == 1) {              //自分が親の場合
+		if (Use_PL == 1) {
+			set_score(b, a);
+		}
+		else if (Use_PL == 0) {
+			set_score(a, b);
+		}
+		if (turn == 3) {
+			score_judge(hWnd);
+			return 0;
+		}
+
+		rule_num = randAtoC();
+		dice_num = dice();
+
+		enable_master();
+		
+		sprintf_s(buf, "%s%d", "RULE", rule_num);
+		send(sock, buf, strlen(buf) + 1, 0);
+		SetWindowText(hWndRule, rule[rule_num]);
+		SetWindowText(hWndQuestion, card_text[card[turn]][dice_num]);
+		if (rule_num == 0) {
+			EnableWindow(hWndSendMSG, TRUE);
+			EnableWindow(hWndSend, TRUE);
+			EnableWindow(hWndClear, TRUE);	// [クリア]
+			DrawableFlag = 1;
+		}
+		else if (rule_num == 1) {
+			EnableWindow(hWndSendMSG, TRUE);
+			EnableWindow(hWndSend, TRUE);
+
+		}
+		else if (rule_num == 2) {
+			EnableWindow(hWndClear, TRUE);	// [クリア]
+			DrawableFlag = 1;
+		}
+
+	}
+	else if (FlagPlayer % 2 == 0) {
+		
+		if (Use_PL == 1) {
+			set_score(a, b);
+		}
+		else if (Use_PL == 0) {
+			set_score(b, a);
+		}
+		if (turn == 3) {
+			score_judge(hWnd);
+			return 0;
+		}
+		enable_player();
+		
+	}
+
+	FlagPlayer++;
+	turn++;
+	return 0;
+}
+
+int score_judge(HWND hWnd){
+	if (Use_PL == 1) {
+		if (score_PL1 > score_PL2) {
+			MessageBox(hWnd, "YOU WIN!!\n親の勝ちです！",
+				"Information", MB_OK | MB_ICONINFORMATION);
+		}
+		else if (score_PL1 < score_PL2) {
+			MessageBox(hWnd, "YOU LOSE!!\n子の勝ちです！",
+				"Information", MB_OK | MB_ICONINFORMATION);
+		}
+		else if (score_PL1 == score_PL2) {
+			MessageBox(hWnd, "引き分けです！",
+				"Information", MB_OK | MB_ICONINFORMATION);
+		}
+
+	}
+	else if (Use_PL == 0) {
+		if (score_PL1 > score_PL2) {
+			MessageBox(hWnd, "YOU LOSE!!\n親の勝ちです！",
+				"Information", MB_OK | MB_ICONINFORMATION);
+		}
+		else if (score_PL1 < score_PL2) {
+			MessageBox(hWnd, "YOU WIN!!\n子の勝ちです！",
+				"Information", MB_OK | MB_ICONINFORMATION);
+		}
+		else if (score_PL1 == score_PL2) {
+			MessageBox(hWnd, "引き分けです！",
+				"Information", MB_OK | MB_ICONINFORMATION);
+		}
+
+	}
+	FlagPlayer = 0;
+	turn = 0;
+	enable_end();
+	return 0;
+}
+
 
 //  ソケット初期化処理
 BOOL SockInit(HWND hWnd)
@@ -750,7 +959,7 @@ BOOL SockConnect(HWND hWnd, LPCSTR host)
 			"Error", MB_OK | MB_ICONEXCLAMATION);
 		return TRUE;
 	}
-	
+
 	// 接続処理
 	if (connect(sock, (LPSOCKADDR)&cl_sin, sizeof(cl_sin)) == SOCKET_ERROR) {
 		if (WSAGetLastError() != WSAEWOULDBLOCK) {
@@ -807,460 +1016,171 @@ BOOL SockAccept(HWND hWnd)
 	return FALSE;
 }
 
-
-//  描画関数
-LRESULT CALLBACK OnPaint(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
-{
-	HDC hdc;
-	PAINTSTRUCT ps;
-
-	hdc = BeginPaint(hWnd, &ps);
-
-	// 描画領域の初期化
-	MoveToEx(hdc, d.left, d.top, NULL);
-	LineTo(hdc, d.right, d.top);    // 上横線
-	LineTo(hdc, d.right, d.bottom); // 右縦線
-	LineTo(hdc, d.left, d.bottom);  // 下横線
-	LineTo(hdc, d.left, d.top); // 左縦線
-	if (ClearFlag==1) {
-		for (int i = 0; i < n; i++) {    // 線を描画
-			flag[i] = 0;
-			pos[i].x = 0;
-			pos[i].y = 0;
-			colors[i] = NULL;
-		}
-		ClearFlag = 0;
-	}
-		for (int i = 0; i < n; i++) {    // 線を描画
-			SelectObject(hdc, colors[i]);
-			if (flag[i] == 0) {      // 開始点なら、始点を移動
-				MoveToEx(hdc, pos[i].x, pos[i].y, NULL);
-			}
-			else {             // 途中の点なら線を引く
-				LineTo(hdc, pos[i].x, pos[i].y);
-			}
-		}
-	
-
-
-	EndPaint(hWnd, &ps);
-
-	return 0L;
-}
-
-//  描画情報を格納
-void setData(int f, int x, int y,HPEN color)
-{
-	flag[n] = f;
-	pos[n].x = x;
-	pos[n].y = y;
-	colors[n] = color;
-}
-
-//  マウスの位置がキャンパスの中かどうか判定する
-BOOL checkMousePos(int x, int y)
-{
-	if (x >= d.left && x <= d.right
-		&& y >= d.top && y <= d.bottom) {
-		return TRUE;
-	}
-	return FALSE;
-}
-
 void enable_wait() {
-	EnableWindow(hWndHost		, FALSE);	// [HostName]
-	EnableWindow(hWndConnect	, FALSE);	// [接続]    
-	EnableWindow(hWndAccept		, FALSE);	// [接続待ち]
-	EnableWindow(hWndReject		, TRUE);	// [切断]    
+	EnableWindow(hWndHost, FALSE);	// [HostName]
+	EnableWindow(hWndConnect, FALSE);	// [接続]    
+	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
+	EnableWindow(hWndReject, TRUE);	// [切断]    
 	EnableWindow(hWndRejectOrder, FALSE);	// [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup		, FALSE);	// [ギブアップ]
-	EnableWindow(hWndCorrect	, FALSE);	// [正解ボタン]    
-	EnableWindow(hWndIncorrect	, FALSE);	// [不正解ボタン]
-	EnableWindow(hWndConsent	, FALSE);	// [承諾]    
-	EnableWindow(hWndPointout	, FALSE);	// [指摘]    
-	EnableWindow(hWndDenial		, FALSE);	// [否認]   
-	EnableWindow(hWndSend		, FALSE);	// [送信]  
-	EnableWindow(hWndChange		, FALSE);	// [交代]
-	EnableWindow(hWndClear		, FALSE);	// [クリア]
+	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
+	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
+	EnableWindow(hWndConsent, FALSE);	// [承諾]    
+	EnableWindow(hWndPointout, FALSE);	// [指摘]    
+	EnableWindow(hWndDenial, FALSE);	// [否認]   
+	EnableWindow(hWndSend, FALSE);	// [送信]  
+	EnableWindow(hWndChange, FALSE);	// [交代]
+	EnableWindow(hWndClear, FALSE);	// [クリア]
 }
 
 void enable_standby() {
-	EnableWindow(hWndHost		, TRUE);	// [HostName]
-	EnableWindow(hWndConnect	, TRUE);	// [接続]    
-	EnableWindow(hWndAccept		, TRUE);	// [接続待ち]
-	EnableWindow(hWndReject		, FALSE);	// [切断]    
+	EnableWindow(hWndHost, TRUE);	// [HostName]
+	EnableWindow(hWndConnect, TRUE);	// [接続]    
+	EnableWindow(hWndAccept, TRUE);	// [接続待ち]
+	EnableWindow(hWndReject, FALSE);	// [切断]    
 	EnableWindow(hWndRejectOrder, FALSE);	// [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup		, FALSE);	// [ギブアップ]
-	EnableWindow(hWndCorrect	, FALSE);	// [正解ボタン]    
-	EnableWindow(hWndIncorrect	, FALSE);	// [不正解ボタン]
-	EnableWindow(hWndConsent	, FALSE);	// [承諾]    
-	EnableWindow(hWndPointout	, FALSE);	// [指摘]    
-	EnableWindow(hWndDenial		, FALSE);	// [否認]   
-	EnableWindow(hWndSend		, FALSE);	// [送信]  
-	EnableWindow(hWndChange		, FALSE);	// [交代]
-	EnableWindow(hWndClear		, FALSE);	// [クリア]
+	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
+	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
+	EnableWindow(hWndConsent, FALSE);	// [承諾]    
+	EnableWindow(hWndPointout, FALSE);	// [指摘]    
+	EnableWindow(hWndDenial, FALSE);	// [否認]   
+	EnableWindow(hWndSend, FALSE);	// [送信]  
+	EnableWindow(hWndChange, FALSE);	// [交代]
+	EnableWindow(hWndClear, FALSE);	// [クリア]
 }
 
 void enable_master() {
-	EnableWindow(hWndHost		, FALSE);	// [HostName]
-	EnableWindow(hWndConnect	, FALSE);	// [接続]    
-	EnableWindow(hWndAccept		, FALSE);	// [接続待ち]
-	EnableWindow(hWndReject		, TRUE);	// [切断]    
+	EnableWindow(hWndSendMSG, FALSE);	// [送信用チャットボックス]
+	EnableWindow(hWndHost, FALSE);	// [HostName]
+	EnableWindow(hWndConnect, FALSE);	// [接続]    
+	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
+	EnableWindow(hWndReject, TRUE);	// [切断]    
 	EnableWindow(hWndRejectOrder, TRUE);	// [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup		, FALSE);	// [ギブアップ]
-	EnableWindow(hWndCorrect	, TRUE);	// [正解ボタン]    
-	EnableWindow(hWndIncorrect	, TRUE);	// [不正解ボタン]
-	EnableWindow(hWndConsent	, FALSE);	// [承諾]    
-	EnableWindow(hWndPointout	, FALSE);	// [指摘]    
-	EnableWindow(hWndDenial		, FALSE);	// [否認]   
-	EnableWindow(hWndSend		, FALSE);	// [送信]  
-	EnableWindow(hWndChange		, FALSE);	// [交代]
-	EnableWindow(hWndClear		, FALSE);	// [クリア]
+	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndCorrect, TRUE);	// [正解ボタン]    
+	EnableWindow(hWndIncorrect, TRUE);	// [不正解ボタン]
+	EnableWindow(hWndConsent, FALSE);	// [承諾]    
+	EnableWindow(hWndPointout, FALSE);	// [指摘]    
+	EnableWindow(hWndDenial, FALSE);	// [否認]   
+	EnableWindow(hWndSend, FALSE);	// [送信]  
+	EnableWindow(hWndChange, FALSE);	// [交代]
+	EnableWindow(hWndClear, FALSE);	// [クリア]
 }
 
 void enable_player() {
-	EnableWindow(hWndSendMSG	, TRUE);	// [送信用チャットボックス]
-	EnableWindow(hWndHost		, FALSE);	// [HostName]
-	EnableWindow(hWndConnect	, FALSE);	// [接続]    
-	EnableWindow(hWndAccept		, FALSE);	// [接続待ち]
-	EnableWindow(hWndReject		, TRUE);	// [切断]    
+	EnableWindow(hWndSendMSG, TRUE);	// [送信用チャットボックス]
+	EnableWindow(hWndHost, FALSE);	// [HostName]
+	EnableWindow(hWndConnect, FALSE);	// [接続]    
+	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
+	EnableWindow(hWndReject, TRUE);	// [切断]    
 	EnableWindow(hWndRejectOrder, TRUE);	// [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup		, TRUE);	// [ギブアップ]
-	EnableWindow(hWndCorrect	, FALSE);	// [正解ボタン]    
-	EnableWindow(hWndIncorrect	, FALSE);	// [不正解ボタン]
-	EnableWindow(hWndConsent	, FALSE);	// [承諾]    
-	EnableWindow(hWndPointout	, FALSE);	// [指摘]    
-	EnableWindow(hWndDenial		, FALSE);	// [否認]   
-	EnableWindow(hWndSend		, TRUE);	// [送信]  
-	EnableWindow(hWndChange		, FALSE);	// [交代]
-	EnableWindow(hWndClear		, FALSE);	// [クリア]
-}  
+	EnableWindow(hWndGiveup, TRUE);	// [ギブアップ]
+	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
+	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
+	EnableWindow(hWndConsent, FALSE);	// [承諾]    
+	EnableWindow(hWndPointout, FALSE);	// [指摘]    
+	EnableWindow(hWndDenial, FALSE);	// [否認]   
+	EnableWindow(hWndSend, TRUE);	// [送信]  
+	EnableWindow(hWndChange, FALSE);	// [交代]
+	EnableWindow(hWndClear, FALSE);	// [クリア]
+}
 
 void enable_end() {
-	EnableWindow(hWndSendMSG	, FALSE);	// [送信用チャットボックス]
-	EnableWindow(hWndHost		, FALSE);	// [HostName]
-	EnableWindow(hWndConnect	, FALSE);	// [接続]    
-	EnableWindow(hWndAccept		, FALSE);	// [接続待ち]
-	EnableWindow(hWndReject		, TRUE);	// [切断]    
+	EnableWindow(hWndSendMSG, FALSE);	// [送信用チャットボックス]
+	EnableWindow(hWndHost, FALSE);	// [HostName]
+	EnableWindow(hWndConnect, FALSE);	// [接続]    
+	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
+	EnableWindow(hWndReject, TRUE);	// [切断]    
 	EnableWindow(hWndRejectOrder, TRUE);	// [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup		, FALSE);	// [ギブアップ]
-	EnableWindow(hWndCorrect	, FALSE);	// [正解ボタン]    
-	EnableWindow(hWndIncorrect	, FALSE);	// [不正解ボタン]
-	EnableWindow(hWndConsent	, FALSE);	// [承諾]    
-	EnableWindow(hWndPointout	, FALSE);	// [指摘]    
-	EnableWindow(hWndDenial		, FALSE);	// [否認]   
-	EnableWindow(hWndSend		, FALSE);	// [送信]  
-	EnableWindow(hWndChange		, FALSE);	// [交代]
-	EnableWindow(hWndClear		, FALSE);	// [クリア]
+	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
+	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
+	EnableWindow(hWndConsent, FALSE);	// [承諾]    
+	EnableWindow(hWndPointout, FALSE);	// [指摘]    
+	EnableWindow(hWndDenial, FALSE);	// [否認]   
+	EnableWindow(hWndSend, FALSE);	// [送信]  
+	EnableWindow(hWndChange, FALSE);	// [交代]
+	EnableWindow(hWndClear, FALSE);	// [クリア]
 }
 
 void enable_correct() {
-	EnableWindow(hWndSendMSG	, FALSE);	// [送信用チャットボックス]
-	EnableWindow(hWndHost		, FALSE);	// [HostName]
-	EnableWindow(hWndConnect	, FALSE);	// [接続]    
-	EnableWindow(hWndAccept		, FALSE);	// [接続待ち]
-	EnableWindow(hWndReject		, TRUE);	// [切断]    
+	EnableWindow(hWndSendMSG, FALSE);	// [送信用チャットボックス]
+	EnableWindow(hWndHost, FALSE);	// [HostName]
+	EnableWindow(hWndConnect, FALSE);	// [接続]    
+	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
+	EnableWindow(hWndReject, TRUE);	// [切断]    
 	EnableWindow(hWndRejectOrder, TRUE);	// [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup		, FALSE);	// [ギブアップ]
-	EnableWindow(hWndCorrect	, FALSE);	// [正解ボタン]    
-	EnableWindow(hWndIncorrect	, FALSE);	// [不正解ボタン]
-	EnableWindow(hWndConsent	, FALSE);	// [承諾]    
-	EnableWindow(hWndPointout	, TRUE);	// [指摘]    
-	EnableWindow(hWndDenial		, FALSE);	// [否認]   
-	EnableWindow(hWndSend		, FALSE);	// [送信]  
-	EnableWindow(hWndChange		, TRUE);	// [交代]
-	EnableWindow(hWndClear		, FALSE);	// [クリア]
+	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
+	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
+	EnableWindow(hWndConsent, FALSE);	// [承諾]    
+	EnableWindow(hWndPointout, TRUE);	// [指摘]    
+	EnableWindow(hWndDenial, FALSE);	// [否認]   
+	EnableWindow(hWndSend, FALSE);	// [送信]  
+	EnableWindow(hWndChange, TRUE);	// [交代]
+	EnableWindow(hWndClear, FALSE);	// [クリア]
 }
 
 void enable_pause() {
-	EnableWindow(hWndSendMSG	, FALSE);	// [送信用チャットボックス]
-	EnableWindow(hWndHost		, FALSE);	// [HostName]
-	EnableWindow(hWndConnect	, FALSE);	// [接続]    
-	EnableWindow(hWndAccept		, FALSE);	// [接続待ち]
-	EnableWindow(hWndReject		, TRUE);	// [切断]    
+	EnableWindow(hWndSendMSG, FALSE);	// [送信用チャットボックス]
+	EnableWindow(hWndHost, FALSE);	// [HostName]
+	EnableWindow(hWndConnect, FALSE);	// [接続]    
+	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
+	EnableWindow(hWndReject, TRUE);	// [切断]    
 	EnableWindow(hWndRejectOrder, TRUE);	// [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup		, FALSE);	// [ギブアップ]
-	EnableWindow(hWndCorrect	, FALSE);	// [正解ボタン]    
-	EnableWindow(hWndIncorrect	, FALSE);	// [不正解ボタン]
-	EnableWindow(hWndConsent	, FALSE);	// [承諾]    
-	EnableWindow(hWndPointout	, FALSE);	// [指摘]    
-	EnableWindow(hWndDenial		, FALSE);	// [否認]   
-	EnableWindow(hWndSend		, TRUE);	// [送信]  
-	EnableWindow(hWndChange		, FALSE);	// [交代]
-	EnableWindow(hWndClear		, FALSE);	// [クリア]
+	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
+	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
+	EnableWindow(hWndConsent, FALSE);	// [承諾]    
+	EnableWindow(hWndPointout, FALSE);	// [指摘]    
+	EnableWindow(hWndDenial, FALSE);	// [否認]   
+	EnableWindow(hWndSend, TRUE);	// [送信]  
+	EnableWindow(hWndChange, FALSE);	// [交代]
+	EnableWindow(hWndClear, FALSE);	// [クリア]
 }
 
 void enable_pointout_master() {
-	EnableWindow(hWndSendMSG	, TRUE);	// [送信用チャットボックス]
-	EnableWindow(hWndHost		, FALSE);	// [HostName]
-	EnableWindow(hWndConnect	, FALSE);	// [接続]    
-	EnableWindow(hWndAccept		, FALSE);	// [接続待ち]
-	EnableWindow(hWndReject		, TRUE);	// [切断]    
+	EnableWindow(hWndSendMSG, TRUE);	// [送信用チャットボックス]
+	EnableWindow(hWndHost, FALSE);	// [HostName]
+	EnableWindow(hWndConnect, FALSE);	// [接続]    
+	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
+	EnableWindow(hWndReject, TRUE);	// [切断]    
 	EnableWindow(hWndRejectOrder, TRUE);	// [切断要請]
 	DrawableFlag = 1;
-	EnableWindow(hWndGiveup		, FALSE);	// [ギブアップ]
-	EnableWindow(hWndCorrect	, FALSE);	// [正解ボタン]    
-	EnableWindow(hWndIncorrect	, FALSE);	// [不正解ボタン]
-	EnableWindow(hWndConsent	, TRUE);	// [承諾]    
-	EnableWindow(hWndPointout	, FALSE);	// [指摘]    
-	EnableWindow(hWndDenial		, TRUE);	// [否認]   
-	EnableWindow(hWndSend		, TRUE);	// [送信]  
-	EnableWindow(hWndChange		, FALSE);	// [交代]
-	EnableWindow(hWndClear		, FALSE);	// [クリア]
+	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
+	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
+	EnableWindow(hWndConsent, TRUE);	// [承諾]    
+	EnableWindow(hWndPointout, FALSE);	// [指摘]    
+	EnableWindow(hWndDenial, TRUE);	// [否認]   
+	EnableWindow(hWndSend, TRUE);	// [送信]  
+	EnableWindow(hWndChange, FALSE);	// [交代]
+	EnableWindow(hWndClear, FALSE);	// [クリア]
 }
 
 void enable_pointout_player() {
-	EnableWindow(hWndSendMSG	, TRUE);	// [送信用チャットボックス]
-	EnableWindow(hWndHost		, FALSE);	// [HostName]
-	EnableWindow(hWndConnect	, FALSE);	// [接続]    
-	EnableWindow(hWndAccept		, FALSE);	// [接続待ち]
-	EnableWindow(hWndReject		, TRUE);	// [切断]    
+	EnableWindow(hWndSendMSG, TRUE);	// [送信用チャットボックス]
+	EnableWindow(hWndHost, FALSE);	// [HostName]
+	EnableWindow(hWndConnect, FALSE);	// [接続]    
+	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
+	EnableWindow(hWndReject, TRUE);	// [切断]    
 	EnableWindow(hWndRejectOrder, TRUE);	// [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup		, FALSE);	// [ギブアップ]
-	EnableWindow(hWndCorrect	, FALSE);	// [正解ボタン]    
-	EnableWindow(hWndIncorrect	, FALSE);	// [不正解ボタン]
-	EnableWindow(hWndConsent	, FALSE);	// [承諾]    
-	EnableWindow(hWndPointout	, FALSE);	// [指摘]    
-	EnableWindow(hWndDenial		, FALSE);	// [否認]   
-	EnableWindow(hWndSend		, TRUE);	// [送信]  
-	EnableWindow(hWndChange		, FALSE);	// [交代]
-	EnableWindow(hWndClear		, FALSE);	// [クリア]
+	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
+	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
+	EnableWindow(hWndConsent, FALSE);	// [承諾]    
+	EnableWindow(hWndPointout, FALSE);	// [指摘]    
+	EnableWindow(hWndDenial, FALSE);	// [否認]   
+	EnableWindow(hWndSend, TRUE);	// [送信]  
+	EnableWindow(hWndChange, FALSE);	// [交代]
+	EnableWindow(hWndClear, FALSE);	// [クリア]
 }
-
-// データを送信する
-void FXY(int f3, int x3, int y3) {
-	char buf[9];                  // 送信内容を一時的に格納するバッファ
-
-	sprintf_s(buf, "%1d%03d%03d", f3, x3, y3);
-	send(sock, buf, strlen(buf) + 1, 0);
-}
-
-int randAtoC() {
-	int A2C[] = {0,1,2};
-	return A2C[rand()%3];
-}
-
-void rand0toi(int ary[],int size) {
-	for (int i = 0; i < size;i++) {
-		int j = rand() % size;
-		int t = ary[i];
-		ary[i] = ary[j];
-		ary[j] = t;
-	}
-}
-
-int dice() {
-	int DICE[] = {0,1,2,3,4,5};
-	return DICE[rand() % 6];
-}
-
-//チャットボックスの内容を消去
-void ChatReset(HWND chatbox){
-	SetWindowText(chatbox, TEXT(""));
-	SetFocus(chatbox);
-}
-
-void game_start() {
-
-	turn = 0;
-	char sender[100];
-	char buf[100];
-
-	ChatReset(hWndSendMSG);
-	ChatReset(hWndRecvMSG);
-	ChatReset(hWndQuestion);
-
-	score_PL1 = 0;						//親の点数aをPL1に付与
-	score_PL2 = 0;						//子の点数bをPL2に付与
-	sprintf_s(buf, "%d", score_PL1);    //PL1の点数をバッファに保存
-	SetWindowText(hWndScore_pl1, buf);  //PL1の点数を表示
-	sprintf_s(buf, "%d", score_PL2);	//PL2の点数をバッファに保存
-	SetWindowText(hWndScore_pl2, buf);	//PL2の点数を表示
-
-
-	if (FlagPlayer % 2 == 1) {              //自分が親の場合
-		enable_master();
-		rand0toi(card, 10);					//カード順番を設定する
-		rule_num = randAtoC();
-		sprintf_s(sender, "%s%d", "RULE", rule_num);
-		send(sock, sender, strlen(sender) + 1, 0);
-		SetWindowText(hWndRule, rule[rule_num]);
-		dice_num = dice();
-		SetWindowText(hWndQuestion, card_text[card[turn]][dice_num]);
-		if (rule_num==0) {
-			EnableWindow(hWndSendMSG, TRUE);
-			EnableWindow(hWndSend	, TRUE);
-			EnableWindow(hWndClear	, TRUE);	// [クリア]
-			DrawableFlag = 1;
-		}else if (rule_num == 1) {
-			EnableWindow(hWndSendMSG, TRUE);
-			EnableWindow(hWndSend	, TRUE);
-		}else if (rule_num == 2) {
-			EnableWindow(hWndClear	, TRUE);	// [クリア]
-			DrawableFlag = 1;
-		}
-	}
-	else {
-		rand0toi(card, 10);					//カード順番を設定する
-		enable_player();
-	}
-	FlagPlayer++;
-	turn++;
-}
-
-//手番交代
-int change(HWND hWnd,int a,int b) {
-
-	char sender[100];
-	char buf[100];
-
-	ChatReset(hWndSendMSG);
-	ChatReset(hWndRecvMSG);
-	ChatReset(hWndQuestion);
-
-	if (FlagPlayer % 2 ==1) {              //自分が親の場合
-		if (Use_PL1 == 1) {
-			score_PL1 += b;                    //親の点数aをPL1に付与
-			score_PL2 += a;                    //子の点数bをPL2に付与
-			sprintf_s(buf, "%d", score_PL1);     //PL1の点数をバッファに保存
-			SetWindowText(hWndScore_pl1, buf);  //PL1の点数を表示
-			sprintf_s(buf, "%d", score_PL2);   //PL2の点数をバッファに保存
-			SetWindowText(hWndScore_pl2, buf); //PL2の点数を表示
-		}
-		else if (Use_PL2 == 1) {
-			score_PL1 += a;                    //親の点数aをPL1に付与
-			score_PL2 += b;                    //子の点数bをPL2に付与
-			sprintf_s(buf, "%d", score_PL1);     //PL1の点数をバッファに保存
-			SetWindowText(hWndScore_pl1, buf);  //PL1の点数を表示
-			sprintf_s(buf, "%d", score_PL2);   //PL2の点数をバッファに保存
-			SetWindowText(hWndScore_pl2, buf); //PL2の点数を表示
-		}
-		
-		if (turn == 3) {
-			if (Use_PL1 == 1) {
-				if (score_PL1 < score_PL2) {
-					MessageBox(hWnd, "YOU WIN!!\n親の勝ちです！",
-						"Information", MB_OK | MB_ICONINFORMATION);
-				}
-				else if (score_PL1 > score_PL2) {
-					MessageBox(hWnd, "YOU LOSE!!\n子の勝ちです！",
-						"Information", MB_OK | MB_ICONINFORMATION);
-				}
-				else if (score_PL1 == score_PL2) {
-					MessageBox(hWnd, "引き分けです！",
-						"Information", MB_OK | MB_ICONINFORMATION);
-				}
-
-			}
-			else if (Use_PL2 == 1) {
-				if (score_PL1 > score_PL2) {
-					MessageBox(hWnd, "YOU LOSE!!\n親の勝ちです！",
-						"Information", MB_OK | MB_ICONINFORMATION);
-				}
-				else if (score_PL1 < score_PL2) {
-					MessageBox(hWnd, "YOU WIN!!\n子の勝ちです！",
-						"Information", MB_OK | MB_ICONINFORMATION);
-				}
-				else if (score_PL1 == score_PL2) {
-					MessageBox(hWnd, "引き分けです！",
-						"Information", MB_OK | MB_ICONINFORMATION);
-				}
-
-			}
-			FlagPlayer = 0;
-			turn = 0;
-			enable_end();
-			return 0;
-		}
-		
-		rule_num = randAtoC();
-		dice_num = dice();
-		enable_master();
-		sprintf_s (sender,"%s%d","RULE",rule_num);
-		send(sock, sender, strlen(sender) + 1, 0);
-		SetWindowText(hWndRule, rule[rule_num]);
-		SetWindowText(hWndQuestion, card_text[card[turn]][dice_num]);
-		if (rule_num == 0) {
-			EnableWindow(hWndSendMSG, TRUE);
-			EnableWindow(hWndSend, TRUE);
-			DrawableFlag = 1;
-		}
-		else if (rule_num == 1) {
-			EnableWindow(hWndSendMSG, TRUE);
-			EnableWindow(hWndSend, TRUE);
-		}
-		else if (rule_num == 2) {
-			DrawableFlag = 1;
-		}
-		
-	}
-	else if(FlagPlayer % 2 == 0) {
-		if (Use_PL1 == 1) {
-			score_PL1 += a;                    //親の点数aをPL1に付与
-			score_PL2 += b;                    //子の点数bをPL2に付与
-			sprintf_s(buf, "%d", score_PL1);     //PL1の点数をバッファに保存
-			SetWindowText(hWndScore_pl1, buf);  //PL1の点数を表示
-			sprintf_s(buf, "%d", score_PL2);   //PL2の点数をバッファに保存
-			SetWindowText(hWndScore_pl2, buf); //PL2の点数を表示
-		}
-		else if (Use_PL2 == 1) {
-			score_PL1 += b;                    //親の点数aをPL1に付与
-			score_PL2 += a;                    //子の点数bをPL2に付与
-			sprintf_s(buf, "%d", score_PL1);     //PL1の点数をバッファに保存
-			SetWindowText(hWndScore_pl1, buf);  //PL1の点数を表示
-			sprintf_s(buf, "%d", score_PL2);   //PL2の点数をバッファに保存
-			SetWindowText(hWndScore_pl2, buf); //PL2の点数を表示
-		}
-		if (turn == 3) {
-			if (Use_PL1 == 1) {
-				if (score_PL1 < score_PL2) {
-					MessageBox(hWnd, "YOU WIN!!\n親の勝ちです！",
-						"Information", MB_OK | MB_ICONINFORMATION);
-				}
-				else if (score_PL1 > score_PL2) {
-					MessageBox(hWnd, "YOU LOSE!!\n子の勝ちです！",
-						"Information", MB_OK | MB_ICONINFORMATION);
-				}
-				else if (score_PL1 == score_PL2) {
-					MessageBox(hWnd, "引き分けです！",
-						"Information", MB_OK | MB_ICONINFORMATION);
-				}
-
-			}
-			else if (Use_PL2 == 1) {
-				if (score_PL1 > score_PL2) {
-					MessageBox(hWnd, "YOU LOSE!!\n親の勝ちです！",
-						"Information", MB_OK | MB_ICONINFORMATION);
-				}
-				else if (score_PL1 < score_PL2) {
-					MessageBox(hWnd, "YOU WIN!!\n子の勝ちです！",
-						"Information", MB_OK | MB_ICONINFORMATION);
-				}
-				else if (score_PL1 == score_PL2) {
-					MessageBox(hWnd, "引き分けです！",
-						"Information", MB_OK | MB_ICONINFORMATION);
-				}
-
-			}
-			FlagPlayer = 0;
-			turn = 0;
-			enable_end();
-			return 0;
-		}
-		enable_player();
-	}
-
-	
-	FlagPlayer++;
-	turn++;
-	return 0;
-}
-

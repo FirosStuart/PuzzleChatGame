@@ -33,6 +33,7 @@
 #define IDF_RECVMSG     2004            // 受信メッセージ表示用エディットボックス
 #define IDF_SCORE_PL1   2005            // 自分の得点用エディットボックス
 #define IDF_SCORE_PL2   2006            // 相手の得点用エディットボックス
+#define IDF_HELP	2007		// ヘルプボックス用エディットボックス
 #define WINDOW_W		910				// ウィンドウの幅
 #define WINDOW_H		800             // ウィンドウの高さ
 #define MAX_ARRAY		10000			// 配列の最大要素数
@@ -56,6 +57,7 @@ static HWND hWndSendMSG;                    // 送信メッセージ入力用エ
 static HWND hWndRecvMSG;                    // 受信メッセージ表示用エディットボックス
 static HWND hWndScore_pl1;                  // 自分の得点用エディットボックス
 static HWND hWndScore_pl2;                  // 相手の得点用エディットボックス
+static HWND hWndHelp;			    // ヘルプボックス用エディットボックス
 static HWND hWndConnect, hWndAccept;        // [接続]ボタンと[接続待ち]ボタン
 static HWND hWndReject;                     // [切断]ボタン
 static HWND hWndRejectOrder;                // [切断要請]ボタン
@@ -214,9 +216,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			WS_CHILD | WS_VISIBLE, 760, 100, 100, 25,
 			hWnd, NULL, NULL, NULL);
 		CreateWindow(TEXT("static"), TEXT("Send Message"), WS_CHILD | WS_VISIBLE,
-			460, 300, 200, 18, hWnd, NULL, NULL, NULL);
+			460, 250, 200, 18, hWnd, NULL, NULL, NULL);
 		CreateWindow(TEXT("static"), TEXT("Receive Message"), WS_CHILD | WS_VISIBLE,
-			460, 470, 200, 18, hWnd, NULL, NULL, NULL);
+			460, 420, 200, 18, hWnd, NULL, NULL, NULL);
 		// ホスト名入力用エディットボックス
 		hWndHost = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
 			WS_CHILD | WS_VISIBLE, 10, 30, 200, 25,
@@ -239,7 +241,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			hWnd, (HMENU)IDB_REJECT, NULL, NULL);
 		// [送信]ボタン
 		hWndSend = CreateWindow("button", "送信",
-			WS_CHILD | WS_VISIBLE | WS_DISABLED, 810, 610, 90, 25,
+			WS_CHILD | WS_VISIBLE | WS_DISABLED, 800, 560, 90, 25,
 			hWnd, (HMENU)IDB_SEND, NULL, NULL);
 		// [ギブアップ]ボタン
 		hWndGiveup = CreateWindow("button", "ギブアップ",
@@ -279,16 +281,20 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			hWnd, (HMENU)IDF_QUESTION, NULL, NULL);
 		// 制約条件用エディットボックス
 		hWndRule = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-			WS_CHILD | WS_VISIBLE | ES_READONLY, 460, 200, 300, 100,
+			WS_CHILD | WS_VISIBLE | ES_READONLY, 460, 200, 300, 50,
 			hWnd, (HMENU)IDF_RULE, NULL, NULL);
 		// 送信メッセージ入力用エディットボックス
 		hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-			WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 460, 320, 300, 150,
+			WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 460, 270, 300, 150,
 			hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
 		// 受信メッセージ表示用エディットボックス
 		hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-			WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 460, 490, 300, 150,
+			WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 460, 440, 300, 150,
 			hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
+		// ヘルプボックス用エディットボックス
+		hWndHelp = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
+			WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 460, 600, 300, 100,
+			hWnd, (HMENU)IDF_HELP, NULL, NULL);
 		// 自分の得点用エディットボックス
 		hWndScore_pl1 = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
 			WS_CHILD | WS_VISIBLE | ES_READONLY, 720, 25, 50, 25,
@@ -371,6 +377,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			sprintf_s(sender, "%s%s%s", "CORRECT","答え:", card_text[card[turn-1]][dice_num]);
 			send(sock, sender, strlen(sender) + 1, 0);
 			enable_pause();
+			SetWindowText(hWndHelp, "相手の判断を待っています。");
 			return 0L;	
 
 		case IDB_CLEAR:   // [クリア]押下
@@ -389,6 +396,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			strcpy_s(buf, "POINTOUT");			// 指摘の内容をバッファに保存
 			send(sock, buf, strlen(buf) + 1, 0);// POINTOUTと送信	
 			enable_pointout_player();
+			SetWindowText(hWndHelp, "相手の判断を待っています。");
 			return 0L;
 
 		case IDB_CONSENT:   // [承諾]押下
@@ -561,12 +569,14 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 					MessageBox(hWnd, "正解です！",
 						"Information", MB_OK | MB_ICONINFORMATION);
 					enable_correct();
+					SetWindowText(hWndHelp, "相手が違反行為をしていたと感じたら指摘を押してください。\r\n問題ない場合は交代を押してください。");
 					return 0L;
 				}
 				else if (strcmp(buf, "POINTOUT") == 0) {
 					MessageBox(hWnd, "指摘点があります！",
 						"Information", MB_OK | MB_ICONINFORMATION);
 					enable_pointout_master();
+					SetWindowText(hWndHelp, "指摘を認める場合は承認を押してください。\r\n認めない場合は否認を押してください。");
 					return 0L;
 
 				}
@@ -811,6 +821,7 @@ int change(HWND hWnd, int a, int b) {
 	ChatReset(hWndSendMSG);
 	ChatReset(hWndRecvMSG);
 	ChatReset(hWndQuestion);
+	ChatReset(hWndHelp);
 
 	if (FlagPlayer % 2 == 1) {              //自分が親の場合
 		if (Use_PL == 1) {
@@ -838,15 +849,18 @@ int change(HWND hWnd, int a, int b) {
 			EnableWindow(hWndSend, TRUE);
 			EnableWindow(hWndClear, TRUE);	// [クリア]
 			DrawableFlag = 1;
+			SetWindowText(hWndHelp, "絵と文字でお題を表現してください。\r\n絵を消したい場合はクリアを押してください。");
 		}
 		else if (rule_num == 1) {
 			EnableWindow(hWndSendMSG, TRUE);
 			EnableWindow(hWndSend, TRUE);
+			SetWindowText(hWndHelp, "文字でお題を表現してください。");
 
 		}
 		else if (rule_num == 2) {
 			EnableWindow(hWndClear, TRUE);	// [クリア]
 			DrawableFlag = 1;
+			SetWindowText(hWndHelp, "絵でお題を表現してください。\r\n絵を消したい場合はクリアを押してください。");
 		}
 
 	}
@@ -863,7 +877,8 @@ int change(HWND hWnd, int a, int b) {
 			return 0;
 		}
 		enable_player();
-		
+		SetWindowText(hWndHelp, "相手が何を表現しているか答えてください。\r\nわからない場合はギブアップを押してください。");
+
 	}
 
 	FlagPlayer++;

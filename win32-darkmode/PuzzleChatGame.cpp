@@ -1,203 +1,248 @@
-
-//  ãƒ˜ãƒƒãƒ€ãƒ•ã‚¡ã‚¤ãƒ«
+//  ƒwƒbƒ_ƒtƒ@ƒCƒ‹
+#include "win32-darkmode.h"
 #include <Windows.h>
 #include <WinSock.h>
 #include <string>
 #include <stdio.h>
 
-// ä½¿ç”¨ãƒ©ã‚¤ãƒ–ãƒ©ãƒª
+
+// g—pƒ‰ƒCƒuƒ‰ƒŠ
 #pragma comment(lib,"wsock32.lib")
 
-//  å®šæ•°å®šç¾©
-#define WM_SOCKET       (WM_USER+1)     // ã‚½ã‚±ãƒƒãƒˆç”¨ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸
-#define PORT            10000           // é€šä¿¡ãƒãƒ¼ãƒˆç•ªå·
 
-#define IDB_CONNECT     1000            // [æ¥ç¶š]ãƒœã‚¿ãƒ³
-#define IDB_ACCEPT      1001            // [æ¥ç¶šå¾…ã¡]ãƒœã‚¿ãƒ³
-#define IDB_REJECT      1002            // [åˆ‡æ–­]ãƒœã‚¿ãƒ³
-#define IDB_REJECTORDER 1003            // [åˆ‡æ–­è¦è«‹]ãƒœã‚¿ãƒ³
-#define IDB_GIVEUP      1004			// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]ãƒœã‚¿ãƒ³
-#define IDB_CORRECT		1005			// [æ­£è§£]ãƒœã‚¿ãƒ³
-#define	IDB_INCORRECT   1006			// [ä¸æ­£è§£]ãƒœã‚¿ãƒ³
-#define IDB_POINTOUT    1007			// [æŒ‡æ‘˜]ãƒœã‚¿ãƒ³
-#define	IDB_CONSENT     1008			// [æ‰¿è«¾]ãƒœã‚¿ãƒ³
-#define IDB_DENIAL      1009			// [å¦èª]ãƒœã‚¿ãƒ³
-#define IDB_CHANGE      1010			// [äº¤ä»£]ãƒœã‚¿ãƒ³
-#define IDB_SEND        1011            // [é€ä¿¡]ãƒœã‚¿ãƒ³
-#define IDB_CLEAR       1012            // [ã‚¯ãƒªã‚¢]ãƒœã‚¿ãƒ³
+HINSTANCE g_hInst;
+HWND g_hWndListView;
 
-#define IDF_HOSTNAME    2000            // ãƒ›ã‚¹ãƒˆåå…¥åŠ›ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-#define IDF_QUESTION    2001            // ãŠé¡Œè¡¨ç¤ºç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-#define IDF_RULE        2002            // åˆ¶ç´„æ¡ä»¶ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-#define IDF_SENDMSG     2003            // é€ä¿¡ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸å…¥åŠ›ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-#define IDF_RECVMSG     2004            // å—ä¿¡ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸è¡¨ç¤ºç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-#define IDF_SCORE_PL1   2005            // è‡ªåˆ†ã®å¾—ç‚¹ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-#define IDF_SCORE_PL2   2006            // ç›¸æ‰‹ã®å¾—ç‚¹ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-#define WINDOW_W		910				// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®å¹…
-#define WINDOW_H		800             // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®é«˜ã•
-#define MAX_ARRAY		10000			// é…åˆ—ã®æœ€å¤§è¦ç´ æ•°
-#define MAX_MESSEGE		30				// ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã®æœ€å¤§è¦ç´ æ•°
+//  ’è”’è‹`
+#define WM_SOCKET       (WM_USER+1)     // ƒ\ƒPƒbƒg—pƒƒbƒZ[ƒW
+#define PORT            10000           // ’ÊMƒ|[ƒg”Ô†
 
-//ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°
-LPCTSTR lpClassName = "Oekaki";         // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¯ãƒ©ã‚¹å
-LPCTSTR lpWindowName = "Oekaki";        // ã‚¿ã‚¤ãƒˆãƒ«ãƒãƒ¼ã«ã¤ãåå‰
 
-SOCKET sock = INVALID_SOCKET;           // ã‚½ã‚±ãƒƒãƒˆ
-SOCKET sv_sock = INVALID_SOCKET;        // ã‚µãƒ¼ãƒç”¨ã‚½ã‚±ãƒƒãƒˆ
-HOSTENT* phe;							// HOSTENTæ§‹é€ ä½“
+#define IDB_CONNECT     1000            // [Ú‘±]ƒ{ƒ^ƒ“
+#define IDB_ACCEPT      1001            // [Ú‘±‘Ò‚¿]ƒ{ƒ^ƒ“
+#define IDB_REJECT      1002            // [Ø’f]ƒ{ƒ^ƒ“
+#define IDB_REJECTORDER 1003            // [Ø’f—v¿]ƒ{ƒ^ƒ“
+#define IDB_GIVEUP      1004			// [ƒMƒuƒAƒbƒv]ƒ{ƒ^ƒ“
+#define IDB_CORRECT		1005			// [³‰ğ]ƒ{ƒ^ƒ“
+#define	IDB_INCORRECT   1006			// [•s³‰ğ]ƒ{ƒ^ƒ“
+#define IDB_POINTOUT    1007			// [w“E]ƒ{ƒ^ƒ“
+#define	IDB_CONSENT     1008			// [³‘ø]ƒ{ƒ^ƒ“
+#define IDB_DENIAL      1009			// [”Û”F]ƒ{ƒ^ƒ“
+#define IDB_CHANGE      1010			// [Œğ‘ã]ƒ{ƒ^ƒ“
+#define IDB_SEND        1011            // [‘—M]ƒ{ƒ^ƒ“
+#define IDB_CLEAR       1012            // [ƒNƒŠƒA]ƒ{ƒ^ƒ“
 
-HPEN hPenBlack;							// é»’ãƒšãƒ³
-HPEN hPenRed;							// èµ¤ãƒšãƒ³
 
-static HWND hWndHost;                       // ãƒ›ã‚¹ãƒˆåå…¥åŠ›ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-static HWND hWndQuestion;                   // ãŠé¡Œè¡¨ç¤ºç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-static HWND hWndRule;                       // åˆ¶ç´„æ¡ä»¶ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-static HWND hWndSendMSG;                    // é€ä¿¡ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸å…¥åŠ›ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-static HWND hWndRecvMSG;                    // å—ä¿¡ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸è¡¨ç¤ºç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-static HWND hWndScore_pl1;                  // è‡ªåˆ†ã®å¾—ç‚¹ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-static HWND hWndScore_pl2;                  // ç›¸æ‰‹ã®å¾—ç‚¹ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
-static HWND hWndConnect, hWndAccept;        // [æ¥ç¶š]ãƒœã‚¿ãƒ³ã¨[æ¥ç¶šå¾…ã¡]ãƒœã‚¿ãƒ³
-static HWND hWndReject;                     // [åˆ‡æ–­]ãƒœã‚¿ãƒ³
-static HWND hWndRejectOrder;                // [åˆ‡æ–­è¦è«‹]ãƒœã‚¿ãƒ³
-static HWND hWndGiveup;						// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]ãƒœã‚¿ãƒ³
-static HWND hWndCorrect;					// [æ­£è§£]ãƒœã‚¿ãƒ³
-static HWND hWndIncorrect;					// [ä¸æ­£è§£]ãƒœã‚¿ãƒ³
-static HWND hWndPointout;					// [æŒ‡æ‘˜]ãƒœã‚¿ãƒ³
-static HWND hWndConsent;					// [æ‰¿è«¾]ãƒœã‚¿ãƒ³
-static HWND hWndDenial;						// [å¦èª]ãƒœã‚¿ãƒ³
-static HWND hWndChange;						// [äº¤ä»£]ãƒœã‚¿ãƒ³
-static HWND hWndSend;                       // [é€ä¿¡]ãƒœã‚¿ãƒ³
-static HWND hWndClear;                       // ãƒ›ã‚¹ãƒˆåå…¥åŠ›ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
+#define IDF_HOSTNAME    2000            // ƒzƒXƒg–¼“ü—ÍƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+#define IDF_QUESTION    2001            // ‚¨‘è•\¦—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+#define IDF_RULE        2002            // §–ñğŒ—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+#define IDF_SENDMSG     2003            // ‘—MƒƒbƒZ[ƒW“ü—Í—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+#define IDF_RECVMSG     2004            // óMƒƒbƒZ[ƒW•\¦—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+#define IDF_SCORE_PL1   2005            // ©•ª‚Ì“¾“_—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+#define IDF_SCORE_PL2   2006            // ‘Šè‚Ì“¾“_—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+#define IDF_HELP        2007            // ƒwƒ‹ƒvƒƒbƒZ[ƒW—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
 
-static int DrawableFlag = 0;				// å…¥åŠ› 1:å¯èƒ½/0:ä¸å¯ çŠ¶æ…‹ç¢ºèªãƒ•ãƒ©ã‚°
-int FlagPlayer;				// å…¥åŠ› 1:å¯èƒ½/0:ä¸å¯ çŠ¶æ…‹ç¢ºèªãƒ•ãƒ©ã‚°
-int Use_PL = 0;
-int score_PL1 = 0;									//PL1ã®ã‚¹ã‚³ã‚¢
-int score_PL2 = 0;									//PL2ã®ã‚¹ã‚³ã‚¢
-int turn = 0;											//æ‰‹ç•ª
-int dice_num;
-int rule_num;										//ãƒ«ãƒ¼ãƒ«ã®ç•ªå·
+#define WINDOW_W		910				// ƒEƒBƒ“ƒhƒE‚Ì•
+#define WINDOW_H		800             // ƒEƒBƒ“ƒhƒE‚Ì‚‚³
 
-const RECT d = { 10, 200, 450, 700 };               // æç”»é ˜åŸŸ(å·¦ä¸Šéš…ã®xåº§æ¨™, å·¦ä¸Šéš…ã®yåº§æ¨™, å³ä¸‹éš…ã®xåº§æ¨™, å³ä¸‹éš…ã®yåº§æ¨™)
+#define MAX_ARRAY		10000			// ”z—ñ‚ÌÅ‘å—v‘f”
 
-int n;                                              // ã‚«ã‚¦ãƒ³ã‚¿
-int flag[MAX_ARRAY];                                // ãƒšãƒ³ãƒ€ã‚¦ãƒ³ãƒ•ãƒ©ã‚°
-POINT pos[MAX_ARRAY];                               // åº§æ¨™ã‚’æ ¼ç´
-HPEN colors[MAX_ARRAY];								// ä½¿ç”¨ã™ã‚‹è‰²
+#define MAX_MESSEGE		30				// ƒƒbƒZ[ƒW‚ÌÅ‘å—v‘f”
 
-char rule[3][10] = {"çµµã¨æ–‡å­—","æ–‡å­—ã®ã¿","çµµã®ã¿"};//ãƒ«ãƒ¼ãƒ«ã®å†…å®¹
-int card[10] = { 0,1,2,3,4,5,6,7,8,9 };				//ã‚«ãƒ¼ãƒ‰é †ç•ª
-char card_text[10][6][30] =							//ãŠé¡Œã®æ›¸ã‹ã‚ŒãŸã‚«ãƒ¼ãƒ‰
+
+
+//ƒOƒ[ƒoƒ‹•Ï”
+
+LPCTSTR lpClassName = "Oekaki";         // ƒEƒBƒ“ƒhƒEƒNƒ‰ƒX–¼
+LPCTSTR lpWindowName = "Oekaki";        // ƒ^ƒCƒgƒ‹ƒo[‚É‚Â‚­–¼‘O
+
+SOCKET sock = INVALID_SOCKET;           // ƒ\ƒPƒbƒg
+SOCKET sv_sock = INVALID_SOCKET;        // ƒT[ƒo—pƒ\ƒPƒbƒg
+
+HOSTENT* phe;							// HOSTENT\‘¢‘Ì
+
+
+HPEN hPenBlack;							// •ƒyƒ“
+HPEN hPenRed;							// Ôƒyƒ“
+
+
+static HWND hWndHost;                       // ƒzƒXƒg–¼“ü—Í—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+static HWND hWndQuestion;                   // ‚¨‘è•\¦—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+static HWND hWndRule;                       // §–ñğŒ—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+static HWND hWndSendMSG;                    // ‘—MƒƒbƒZ[ƒW“ü—Í—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+static HWND hWndRecvMSG;                    // óMƒƒbƒZ[ƒW•\¦—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+static HWND hWndScore_pl1;                  // ©•ª‚Ì“¾“_—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+static HWND hWndScore_pl2;                  // ‘Šè‚Ì“¾“_—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+static HWND hWndHelp;                       // ƒwƒ‹ƒvƒƒbƒZ[ƒW—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+static HWND hWndConnect, hWndAccept;        // [Ú‘±]ƒ{ƒ^ƒ“‚Æ[Ú‘±‘Ò‚¿]ƒ{ƒ^ƒ“
+static HWND hWndReject;                     // [Ø’f]ƒ{ƒ^ƒ“
+static HWND hWndRejectOrder;                // [Ø’f—v¿]ƒ{ƒ^ƒ“
+static HWND hWndGiveup;						// [ƒMƒuƒAƒbƒv]ƒ{ƒ^ƒ“
+static HWND hWndCorrect;					// [³‰ğ]ƒ{ƒ^ƒ“
+static HWND hWndIncorrect;					// [•s³‰ğ]ƒ{ƒ^ƒ“
+static HWND hWndPointout;					// [w“E]ƒ{ƒ^ƒ“
+static HWND hWndConsent;					// [³‘ø]ƒ{ƒ^ƒ“
+static HWND hWndDenial;						// [”Û”F]ƒ{ƒ^ƒ“
+static HWND hWndChange;						// [Œğ‘ã]ƒ{ƒ^ƒ“
+static HWND hWndSend;                       // [‘—M]ƒ{ƒ^ƒ“
+static HWND hWndClear;                       // ƒzƒXƒg–¼“ü—Í—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+
+static int DrawableFlag = 0;	// “ü—Í 1:‰Â”\/0:•s‰Â ó‘ÔŠm”Fƒtƒ‰ƒO
+
+int FlagPlayer;					//Œ»İ‚ÌPL‚ªe‚Å‚ ‚é‚©q‚Å‚ ‚é‚©‚ğŠm”F‚·‚éƒtƒ‰ƒO
+int Use_PL = 0;					//PLƒiƒ“ƒo[‚ğŠm”F‚·‚é
+int score_PL1 = 0;				//PL1‚ÌƒXƒRƒA
+int score_PL2 = 0;				//PL2‚ÌƒXƒRƒA
+int turn = 0;					//è”Ô
+int dice_num;					//ƒ_ƒCƒX‚ÌŒ‹‰Ê
+int rule_num;					//ƒ‹[ƒ‹‚Ì”Ô†
+
+const RECT d = { 10, 200, 450, 700 };               // •`‰æ—Ìˆæ(¶ã‹÷‚ÌxÀ•W, ¶ã‹÷‚ÌyÀ•W, ‰E‰º‹÷‚ÌxÀ•W, ‰E‰º‹÷‚ÌyÀ•W)
+
+int n;                                              // ƒJƒEƒ“ƒ^
+int flag[MAX_ARRAY];                                // ƒyƒ“ƒ_ƒEƒ“ƒtƒ‰ƒO
+POINT pos[MAX_ARRAY];                               // À•W‚ğŠi”[
+HPEN colors[MAX_ARRAY];								// g—p‚·‚éF
+
+char rule[3][10] = { "ŠG‚Æ•¶š","•¶š‚Ì‚İ","ŠG‚Ì‚İ" };//ƒ‹[ƒ‹‚Ì“à—e
+int card[10] = { 0,1,2,3,4,5,6,7,8,9 };				//ƒJ[ƒh‡”Ô
+char card_text[10][6][30] =							//‚¨‘è‚Ì‘‚©‚ê‚½ƒJ[ƒh
 {
-	{"çŒ«","é¼ ","çŠ¬","ç†Š","ç‹","é¦¬"},
-	{"ãƒ†ãƒ¬ãƒ“","æ´—æ¿¯æ©Ÿ","ã‚¨ã‚¢ã‚³ãƒ³","å†·è”µåº«","é›»å­ãƒ¬ãƒ³ã‚¸","è‡ªå‹•è»Š"},
-	{"ã‚¯ãƒªã‚¹ãƒã‚¹","ãƒãƒ¬ãƒ³ã‚¿ã‚¤ãƒ³","ãŠæ­£æœˆ","ãƒãƒ­ã‚¦ã‚£ãƒ³","å¤ç¥­ã‚Š","ä¸ƒå¤•"},
-	{"ã‚µãƒƒã‚«ãƒ¼ãƒœãƒ¼ãƒ«","é‡çƒãƒœãƒ¼ãƒ«","ãƒãƒ¬ãƒ¼ãƒœãƒ¼ãƒ«","ãƒã‚¹ã‚±ãƒœãƒ¼ãƒ«","å“çƒãƒœãƒ¼ãƒ«","ãƒ†ãƒ‹ã‚¹ãƒœãƒ¼ãƒ«"},
-	{"ã‚­ãƒ£ãƒ“ãƒ³ã‚¢ãƒ†ãƒ³ãƒ€ãƒ³ãƒˆ","ãƒŠãƒ¼ã‚¹","ä¼šç¤¾å“¡","å­¦ç”Ÿ","è­¦å¯Ÿå®˜","ãƒãƒ¼ãƒ†ãƒ³ãƒ€ãƒ¼"},
-	{"ãƒ”ã‚¶","ãƒãƒ³ãƒãƒ¼ã‚¬ãƒ¼","ã‚³ãƒ¼ãƒ©","ãƒãƒƒãƒ—ã‚³ãƒ¼ãƒ³","ãƒ•ãƒ©ã‚¤ãƒ‰ãƒã‚­ãƒ³","ãƒ•ãƒ©ã‚¤ãƒ‰ãƒãƒ†ãƒˆ"},
-	{"ã‚±ãƒ¼ã‚­", "ãƒ‘ãƒ•ã‚§", "ãƒ—ãƒªãƒ³", "ã‚¢ã‚¤ã‚¹ã‚¯ãƒªãƒ¼ãƒ ", "ãƒ‰ãƒ¼ãƒŠãƒ„", "ã‚¯ãƒ¬ãƒ¼ãƒ—"},
-	{"æ‰‹è¢‹","ã‚¹ã‚«ãƒ¼ãƒˆ","ãƒªãƒœãƒ³","é´ä¸‹","ã‚³ãƒ¼ãƒˆ","ã‚¹ãƒ¼ãƒ„"},
-	{"æ¡ƒå¤ªéƒ","é‡‘å¤ªéƒ","ã‹ãã‚„å§«","ã‹ã¡ã‹ã¡å±±","æµ¦å³¶å¤ªéƒ","é¶´ã®æ©è¿”ã—"},
-	{"ã‚¢ãƒ¡ãƒªã‚«","ãƒ­ã‚·ã‚¢","ãƒ‰ã‚¤ãƒ„","ä¸­å›½","æ—¥æœ¬","ã‚¤ã‚®ãƒªã‚¹"}
+	{"”L","‘l","Œ¢","ŒF","ŒÏ","”n"},
+	{"ƒeƒŒƒr","ô‘ó‹@","ƒGƒAƒRƒ“","—â‘ ŒÉ","“dqƒŒƒ“ƒW","©“®Ô"},
+	{"ƒNƒŠƒXƒ}ƒX","ƒoƒŒƒ“ƒ^ƒCƒ“","‚¨³Œ","ƒnƒƒEƒBƒ“","‰ÄÕ‚è","µ—["},
+	{"ƒTƒbƒJ[ƒ{[ƒ‹","–ì‹…ƒ{[ƒ‹","ƒoƒŒ[ƒ{[ƒ‹","ƒoƒXƒPƒ{[ƒ‹","‘ì‹…ƒ{[ƒ‹","ƒeƒjƒXƒ{[ƒ‹"},
+	{"ƒLƒƒƒrƒ“ƒAƒeƒ“ƒ_ƒ“ƒg","ƒi[ƒX","‰ïĞˆõ","Šw¶","Œx@Š¯","ƒo[ƒeƒ“ƒ_["},
+	{"ƒsƒU","ƒnƒ“ƒo[ƒK[","ƒR[ƒ‰","ƒ|ƒbƒvƒR[ƒ“","ƒtƒ‰ƒCƒhƒ`ƒLƒ“","ƒtƒ‰ƒCƒhƒ|ƒeƒg"},
+	{"ƒP[ƒL", "ƒpƒtƒF", "ƒvƒŠƒ“", "ƒAƒCƒXƒNƒŠ[ƒ€", "ƒh[ƒiƒc", "ƒNƒŒ[ƒv"},
+	{"è‘Ü","ƒXƒJ[ƒg","ƒŠƒ{ƒ“","ŒC‰º","ƒR[ƒg","ƒX[ƒc"},
+	{"“‘¾˜Y","‹à‘¾˜Y","‚©‚®‚â•P","‚©‚¿‚©‚¿R","‰Y“‡‘¾˜Y","’ß‚Ì‰¶•Ô‚µ"},
+	{"ƒAƒƒŠƒJ","ƒƒVƒA","ƒhƒCƒc","’†‘","“ú–{","ƒCƒMƒŠƒX"}
+
 };
-//  ãƒ—ãƒ­ãƒˆã‚¿ã‚¤ãƒ—å®£è¨€
-LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦é–¢æ•°
-LRESULT CALLBACK OnPaint(HWND, UINT, WPARAM, LPARAM);	// æç”»é–¢æ•°
-LRESULT CALLBACK ClearPaint(HWND, UINT, WPARAM, LPARAM);	// æç”»é–¢æ•°
 
-BOOL checkMousePos(int x, int y);						// ãƒã‚¦ã‚¹ã®ä½ç½®ãŒã‚­ãƒ£ãƒ³ãƒ‘ã‚¹ã®ä¸­ã‹ã©ã†ã‹åˆ¤å®šã™ã‚‹
-void setData(int flag, int x, int y, HPEN color);       // æç”»æƒ…å ±ã‚’å…¥ã‚Œã‚‹
-void FXY(int f, int x, int y);
-void ChatReset(HWND chatbox);
+//  ƒvƒƒgƒ^ƒCƒvéŒ¾
+LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);//ƒEƒBƒ“ƒhƒEŠÖ”
+LRESULT CALLBACK OnPaint(HWND, UINT, WPARAM, LPARAM);	//•`‰æŠÖ”
+LRESULT CALLBACK ClearPaint(HWND);//•`‰æƒŠƒZƒbƒgŠÖ”
+INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 
-int randAtoC();
-void rand0toi(int ary[], int size);
-int dice();
+BOOL checkMousePos(int x, int y);						//ƒ}ƒEƒX‚ÌˆÊ’u‚ªƒLƒƒƒ“ƒpƒX‚Ì’†‚©‚Ç‚¤‚©”»’è‚·‚é
+void setData(int flag, int x, int y, HPEN color);       //•`‰æî•ñ‚ğ“ü‚ê‚é
+void FXY(int f, int x, int y);							//•`‰æƒf[ƒ^‚ğ‘—M‚·‚éŠÖ”
+void ChatReset(HWND chatbox);							//ƒ`ƒƒƒbƒgƒ{ƒbƒNƒX‚ğƒŠƒZƒbƒg‚·‚éŠÖ”
 
-void game_start(HWND hWnd);
-int change(HWND, int a, int b);
-int score_judge(HWND hWnd);
+int randAtoC();											//1`3‚Ìƒ‰ƒ“ƒ_ƒ€‚È”š‚ğ•Ô‚·
+void rand0toi(int ary[], int size);						//iŒÂ‚Ì”z—ñ‚Ì‡”Ô‚ğƒ‰ƒ“ƒ_ƒ€‚É“ü‚ê‘Ö‚¦‚é
+int dice();												//1`6‚Ìƒ‰ƒ“ƒ_ƒ€‚È”š‚ğ•Ô‚·
 
-BOOL SockInit(HWND hWnd);                               // ã‚½ã‚±ãƒƒãƒˆåˆæœŸåŒ–
-BOOL SockAccept(HWND hWnd);                             // ã‚½ã‚±ãƒƒãƒˆæ¥ç¶šå¾…ã¡
-BOOL SockConnect(HWND hWnd, LPCSTR host);               // ã‚½ã‚±ãƒƒãƒˆæ¥ç¶š
+void game_start(HWND hWnd);								//ƒQ[ƒ€ŠJn‚ÉÀs‚·‚éŠÖ”
+int change(HWND, int a, int b);							//è”Ô‚ğŒğ‘ã‚·‚é‚Æ‚«‚ÉÀs‚·‚éŠÖ”
+int score_judge(HWND hWnd);								//Ÿ—˜”»’è‚ğs‚¤ŠÖ”
 
-void enable_master();
-void enable_player();
-void enable_end();
-void enable_correct();
-void enable_pause();
-void enable_pointout_master();
-void enable_pointout_player();
-void enable_wait();
-void enable_standby();
+BOOL SockInit(HWND hWnd);                               // ƒ\ƒPƒbƒg‰Šú‰»
+BOOL SockAccept(HWND hWnd);                             // ƒ\ƒPƒbƒgÚ‘±‘Ò‚¿
+BOOL SockConnect(HWND hWnd, LPCSTR host);               // ƒ\ƒPƒbƒgÚ‘±
 
 
-//  WinMainé–¢æ•° (Windowsãƒ—ãƒ­ã‚°ãƒ©ãƒ èµ·å‹•æ™‚ã«å‘¼ã°ã‚Œã‚‹é–¢æ•°)
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
+void enable_master();			//e‚Ì‰Šúó‘Ô	
+void enable_player();			//q‚Ì‰Šúó‘Ô
+void enable_end();				//ƒQ[ƒ€I—¹‚Ìó‘Ô
+void enable_correct();			//³‰ğ‚µ‚½‚Ìq‚Ìó‘Ô
+void enable_pause();			//³‰ğƒ{ƒ^ƒ“‚ğ‰Ÿ‚µ‚½Œã‚Ìe‚Ìó‘Ô
+void enable_pointout_master();	//w“E‚ğ‚³‚ê‚½Œã‚Ìe‚Ìó‘Ô
+void enable_pointout_player();	//w“E‚ğ‚µ‚½Œã‚Ìq‚Ìó‘Ô
+void enable_wait();				//Ú‘±‘Ò‚¿‚Ì‚Ìó‘Ô
+void enable_standby();			//Ú‘±‚·‚é‘O‚Ìó‘Ô
+
+
+INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	MSG  msg;                                           // ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸
-	WNDCLASSEX wc;                                      // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¯ãƒ©ã‚¹
-	HWND hWnd;                                          // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒãƒ³ãƒ‰ãƒ«
-
-	//ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¯ãƒ©ã‚¹å®šç¾©
-	wc.hInstance = hInstance;							// ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹
-	wc.lpszClassName = lpClassName;                     // ã‚¯ãƒ©ã‚¹å
-	wc.lpfnWndProc = WindowProc;						// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦é–¢æ•°å
-	wc.style = 0;										// ã‚¯ãƒ©ã‚¹ã‚¹ã‚¿ã‚¤ãƒ«
-	wc.cbSize = sizeof(WNDCLASSEX);						// æ§‹é€ ä½“ã‚µã‚¤ã‚º
-	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);			// ã‚¢ã‚¤ã‚³ãƒ³ãƒãƒ³ãƒ‰ãƒ«
-	wc.hIconSm = LoadIcon(NULL, IDI_WINLOGO);			// ã‚¹ãƒ¢ãƒ¼ãƒ«ã‚¢ã‚¤ã‚³ãƒ³
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);			// ãƒã‚¦ã‚¹ãƒã‚¤ãƒ³ã‚¿
-	wc.lpszMenuName = NULL;                             // ãƒ¡ãƒ‹ãƒ¥ãƒ¼(ãªã—)
-	wc.cbClsExtra = 0;									// ã‚¯ãƒ©ã‚¹æ‹¡å¼µæƒ…å ±
-	wc.cbWndExtra = 0;									// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦æ‹¡å¼µæƒ…å ±
-	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;			// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®èƒŒæ™¯è‰²
-	if (!RegisterClassEx(&wc)) return 0;                // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¯ãƒ©ã‚¹ç™»éŒ²
-
-	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ç”Ÿæˆ
-	hWnd = CreateWindow(
-		lpClassName,                                // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¯ãƒ©ã‚¹å
-		lpWindowName,                               // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦å
-		WS_DLGFRAME | WS_VISIBLE | WS_SYSMENU,      // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦å±æ€§
-		CW_USEDEFAULT,                              // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦è¡¨ç¤ºä½ç½®(X)
-		CW_USEDEFAULT,                              // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦è¡¨ç¤ºä½ç½®(Y)
-		WINDOW_W,                                   // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚º(X)
-		WINDOW_H,                                   // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚º(Y)
-		HWND_DESKTOP,                               // è¦ªã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãƒãƒ³ãƒ‰ãƒ«
-		NULL,
-		hInstance,                                  // ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ãƒãƒ³ãƒ‰ãƒ«
-		NULL
-	);
-
-	// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦è¡¨ç¤º
-	ShowWindow(hWnd, nCmdShow);                         // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦è¡¨ç¤ºãƒ¢ãƒ¼ãƒ‰
-	UpdateWindow(hWnd);                                 // ã‚¦ã‚¤ãƒ³ãƒ‰ã‚¦æ›´æ–°
-
-	// ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒ«ãƒ¼ãƒ—
-	while (GetMessage(&msg, NULL, 0, 0)) {              // ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’å–å¾—
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);                          // ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸é€ã‚‹
+	UNREFERENCED_PARAMETER(lParam);
+	constexpr COLORREF darkBkColor = 0x383838;
+	constexpr COLORREF darkTextColor = 0xFFFFFF;
+	static HBRUSH hbrBkgnd = nullptr;
+	switch (message)
+	{
+	case WM_INITDIALOG:
+	{
+		if (g_darkModeSupported)
+		{
+			SetWindowTheme(GetDlgItem(hDlg, IDOK), L"Explorer", nullptr);
+			SendMessageW(hDlg, WM_THEMECHANGED, 0, 0);
+		}
+		return (INT_PTR)TRUE;
 	}
-	return (int)msg.wParam;                             // ãƒ—ãƒ­ã‚°ãƒ©ãƒ çµ‚äº†
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		break;
+	case WM_CTLCOLORDLG:
+	case WM_CTLCOLORSTATIC:
+	{
+		if (g_darkModeSupported && g_darkModeEnabled)
+		{
+			HDC hdc = reinterpret_cast<HDC>(wParam);
+			SetTextColor(hdc, darkTextColor);
+			SetBkColor(hdc, darkBkColor);
+			if (!hbrBkgnd)
+				hbrBkgnd = CreateSolidBrush(darkBkColor);
+			return reinterpret_cast<INT_PTR>(hbrBkgnd);
+		}
+	}
+	break;
+	case WM_DESTROY:
+		if (hbrBkgnd)
+		{
+			DeleteObject(hbrBkgnd);
+			hbrBkgnd = nullptr;
+		}
+		break;
+	case WM_SETTINGCHANGE:
+	{
+		if (g_darkModeSupported && IsColorSchemeChangeMessage(lParam))
+			SendMessageW(hDlg, WM_THEMECHANGED, 0, 0);
+	}
+	break;
+	case WM_THEMECHANGED:
+	{
+		if (g_darkModeSupported)
+		{
+			_AllowDarkModeForWindow(hDlg, g_darkModeEnabled);
+			RefreshTitleBarThemeColor(hDlg);
+
+			HWND hButton = GetDlgItem(hDlg, IDOK);
+			_AllowDarkModeForWindow(hButton, g_darkModeEnabled);
+			SendMessageW(hButton, WM_THEMECHANGED, 0, 0);
+
+			UpdateWindow(hDlg);
+		}
+	}
+	break;
+	}
+	return (INT_PTR)FALSE;
 }
 
-
-//  ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦é–¢æ•°(ã‚¤ãƒ™ãƒ³ãƒˆå‡¦ç†ã‚’è¨˜è¿°)
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 {
-	static BOOL mouseFlg = FALSE;       // å‰å›ã®çŠ¶æ…‹ TRUE:æç”»ã—ãŸã€FALSE:æç”»ã—ã¦ã„ãªã„
-	SOCKADDR_IN cl_sin;
-	int flag2, x2, y2;
-	int len = sizeof(cl_sin);
-	char host[100];
-	char buf[100];						// å—ä¿¡å†…å®¹ã‚’ä¸€æ™‚çš„ã«æ ¼ç´ã™ã‚‹ãƒãƒƒãƒ•ã‚¡
-	int score_Master = 0;								//è¦ªã®ã‚¹ã‚³ã‚¢	
-	int score_Player = 0;								//å­ã®ã‚¹ã‚³ã‚¢
-
-	switch (uMsg) {
-	case WM_CREATE:			// ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒç”Ÿæˆã•ã‚ŒãŸ
-	{// æ–‡å­—åˆ—è¡¨ç¤º
+	static BOOL mouseFlg = FALSE;       //‘O‰ñ‚Ìó‘Ô TRUE:•`‰æ‚µ‚½AFALSE:•`‰æ‚µ‚Ä‚¢‚È‚¢
+	SOCKADDR_IN cl_sin;					//ƒCƒ“ƒ^[ƒlƒbƒg—pƒ\ƒPƒbƒgƒAƒhƒŒƒX
+	int flag2, x2, y2;					//ó‚¯æ‚Á‚½À•WAƒtƒ‰ƒO‚ğŠi”[‚·‚é
+	int len = sizeof(cl_sin);			//ƒCƒ“ƒ^[ƒlƒbƒg—pƒ\ƒPƒbƒgƒAƒhƒŒƒX‚Ì’·‚³
+	char host[100];						//ƒzƒXƒg–¼
+	char buf[100];						//óM“à—e‚ğˆê“I‚ÉŠi”[‚·‚éƒoƒbƒtƒ@
+	int score_Master = 0;				//e‚ÌƒXƒRƒA	
+	int score_Player = 0;				//q‚ÌƒXƒRƒA
+	static const COLORREF newSysColor[] = { RGB(255,255,255)};
+	static const int setSysColor[] = { COLOR_ACTIVECAPTION };
+	static COLORREF defSysColor[1];
+	switch (uMsg)
+	{
+	case WM_CREATE: // ƒEƒBƒ“ƒhƒE‚ª¶¬‚³‚ê‚½
+	{
 		CreateWindow("static", "Host Name",
 			WS_CHILD | WS_VISIBLE, 10, 10, 100, 18,
 			hWnd, NULL, NULL, NULL);
@@ -214,973 +259,1212 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			WS_CHILD | WS_VISIBLE, 760, 100, 100, 25,
 			hWnd, NULL, NULL, NULL);
 		CreateWindow(TEXT("static"), TEXT("Send Message"), WS_CHILD | WS_VISIBLE,
-			460, 300, 200, 18, hWnd, NULL, NULL, NULL);
+			460, 250, 200, 18, hWnd, NULL, NULL, NULL);
 		CreateWindow(TEXT("static"), TEXT("Receive Message"), WS_CHILD | WS_VISIBLE,
-			460, 470, 200, 18, hWnd, NULL, NULL, NULL);
-		// ãƒ›ã‚¹ãƒˆåå…¥åŠ›ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
+			460, 420, 200, 18, hWnd, NULL, NULL, NULL);
+		// ƒzƒXƒg–¼“ü—Í—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
 		hWndHost = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
 			WS_CHILD | WS_VISIBLE, 10, 30, 200, 25,
 			hWnd, (HMENU)IDF_HOSTNAME, NULL, NULL);
-		// [æ¥ç¶š]ãƒœã‚¿ãƒ³
-		hWndConnect = CreateWindow("button", "æ¥ç¶š",
+		// [Ú‘±]ƒ{ƒ^ƒ“
+		hWndConnect = CreateWindow("button", "Ú‘±",
 			WS_CHILD | WS_VISIBLE, 220, 30, 50, 25,
 			hWnd, (HMENU)IDB_CONNECT, NULL, NULL);
-		// [æ¥ç¶šå¾…ã¡]ãƒœã‚¿ãƒ³
-		hWndAccept = CreateWindow("button", "æ¥ç¶šå¾…ã¡",
+		// [Ú‘±‘Ò‚¿]ƒ{ƒ^ƒ“
+		hWndAccept = CreateWindow("button", "Ú‘±‘Ò‚¿",
 			WS_CHILD | WS_VISIBLE, 275, 30, 90, 25,
 			hWnd, (HMENU)IDB_ACCEPT, NULL, NULL);
-		// [åˆ‡æ–­è¦è«‹]ãƒœã‚¿ãƒ³
-		hWndRejectOrder = CreateWindow("button", "åˆ‡æ–­è¦è«‹",
+		// [Ø’f—v¿]ƒ{ƒ^ƒ“
+		hWndRejectOrder = CreateWindow("button", "Ø’f—v¿",
 			WS_CHILD | WS_VISIBLE | WS_DISABLED, 275, 70, 90, 25,
 			hWnd, (HMENU)IDB_REJECTORDER, NULL, NULL);
-		// [åˆ‡æ–­]ãƒœã‚¿ãƒ³
-		hWndReject = CreateWindow("button", "åˆ‡æ–­",
+		// [Ø’f]ƒ{ƒ^ƒ“
+		hWndReject = CreateWindow("button", "Ø’f",
 			WS_CHILD | WS_VISIBLE | WS_DISABLED, 220, 70, 50, 25,
 			hWnd, (HMENU)IDB_REJECT, NULL, NULL);
-		// [é€ä¿¡]ãƒœã‚¿ãƒ³
-		hWndSend = CreateWindow("button", "é€ä¿¡",
-			WS_CHILD | WS_VISIBLE | WS_DISABLED, 810, 610, 90, 25,
+		// [‘—M]ƒ{ƒ^ƒ“
+		hWndSend = CreateWindow("button", "‘—M",
+			WS_CHILD | WS_VISIBLE | WS_DISABLED, 800, 560, 90, 25,
 			hWnd, (HMENU)IDB_SEND, NULL, NULL);
-		// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]ãƒœã‚¿ãƒ³
-		hWndGiveup = CreateWindow("button", "ã‚®ãƒ–ã‚¢ãƒƒãƒ—",
+		// [ƒMƒuƒAƒbƒv]ƒ{ƒ^ƒ“
+		hWndGiveup = CreateWindow("button", "ƒMƒuƒAƒbƒv",
 			WS_CHILD | WS_VISIBLE | WS_DISABLED, 480, 30, 100, 25,
 			hWnd, (HMENU)IDB_GIVEUP, NULL, NULL);
-		// [æ­£è§£]ãƒœã‚¿ãƒ³
-		hWndCorrect = CreateWindow("button", "æ­£è§£",
+		// [³‰ğ]ƒ{ƒ^ƒ“
+		hWndCorrect = CreateWindow("button", "³‰ğ",
 			WS_CHILD | WS_VISIBLE | WS_DISABLED, 400, 30, 70, 25,
 			hWnd, (HMENU)IDB_CORRECT, NULL, NULL);
-		// [ä¸æ­£è§£]ãƒœã‚¿ãƒ³
-		hWndIncorrect = CreateWindow("button", "ä¸æ­£è§£",
+		// [•s³‰ğ]ƒ{ƒ^ƒ“
+		hWndIncorrect = CreateWindow("button", "•s³‰ğ",
 			WS_CHILD | WS_VISIBLE | WS_DISABLED, 400, 70, 70, 25,
 			hWnd, (HMENU)IDB_INCORRECT, NULL, NULL);
-		// [æŒ‡æ‘˜]ãƒœã‚¿ãƒ³
-		hWndPointout = CreateWindow("button", "æŒ‡æ‘˜",
+		// [w“E]ƒ{ƒ^ƒ“
+		hWndPointout = CreateWindow("button", "w“E",
 			WS_CHILD | WS_VISIBLE | WS_DISABLED, 480, 70, 100, 25,
 			hWnd, (HMENU)IDB_POINTOUT, NULL, NULL);
-		// [æ‰¿è«¾]ãƒœã‚¿ãƒ³
-		hWndConsent = CreateWindow("button", "æ‰¿è«¾",
+		// [³‘ø]ƒ{ƒ^ƒ“
+		hWndConsent = CreateWindow("button", "³‘ø",
 			WS_CHILD | WS_VISIBLE | WS_DISABLED, 590, 30, 50, 25,
 			hWnd, (HMENU)IDB_CONSENT, NULL, NULL);
-		// [å¦èª]ãƒœã‚¿ãƒ³
-		hWndDenial = CreateWindow("button", "å¦èª",
+		// [”Û”F]ƒ{ƒ^ƒ“
+		hWndDenial = CreateWindow("button", "”Û”F",
 			WS_CHILD | WS_VISIBLE | WS_DISABLED, 590, 70, 50, 25,
 			hWnd, (HMENU)IDB_DENIAL, NULL, NULL);
-		// [äº¤ä»£]ãƒœã‚¿ãƒ³
-		hWndChange = CreateWindow("button", "äº¤ä»£",
+		// [Œğ‘ã]ƒ{ƒ^ƒ“
+		hWndChange = CreateWindow("button", "Œğ‘ã",
 			WS_CHILD | WS_VISIBLE | WS_DISABLED, 660, 30, 70, 25,
 			hWnd, (HMENU)IDB_CHANGE, NULL, NULL);
-		// [ã‚¯ãƒªã‚¢]ãƒœã‚¿ãƒ³
-		hWndClear = CreateWindow("button", "ã‚¯ãƒªã‚¢",
+		// [ƒNƒŠƒA]ƒ{ƒ^ƒ“
+		hWndClear = CreateWindow("button", "ƒNƒŠƒA",
 			WS_CHILD | WS_VISIBLE | WS_DISABLED, 660, 70, 70, 25,
 			hWnd, (HMENU)IDB_CLEAR, NULL, NULL);
-		// ãŠé¡Œç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
+		// ‚¨‘è—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
 		hWndQuestion = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
 			WS_CHILD | WS_VISIBLE | ES_READONLY, 10, 150, 200, 25,
 			hWnd, (HMENU)IDF_QUESTION, NULL, NULL);
-		// åˆ¶ç´„æ¡ä»¶ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
+		// §–ñğŒ—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
 		hWndRule = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-			WS_CHILD | WS_VISIBLE | ES_READONLY, 460, 200, 300, 100,
+			WS_CHILD | WS_VISIBLE | ES_READONLY, 460, 200, 300, 50,
 			hWnd, (HMENU)IDF_RULE, NULL, NULL);
-		// é€ä¿¡ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸å…¥åŠ›ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
+		// ‘—MƒƒbƒZ[ƒW“ü—Í—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
 		hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-			WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 460, 320, 300, 150,
+			WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 460, 270, 300, 150,
 			hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
-		// å—ä¿¡ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸è¡¨ç¤ºç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
+		// óMƒƒbƒZ[ƒW•\¦—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
 		hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-			WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 460, 490, 300, 150,
+			WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 460, 440, 300, 150,
 			hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
-		// è‡ªåˆ†ã®å¾—ç‚¹ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
+		// ƒwƒ‹ƒvƒƒbƒZ[ƒW—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
+		hWndHelp = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
+			WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 460, 600, 300, 100,
+			hWnd, (HMENU)IDF_HELP, NULL, NULL);
+		// ©•ª‚Ì“¾“_—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
 		hWndScore_pl1 = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-			WS_CHILD | WS_VISIBLE | ES_READONLY, 720, 25, 50, 25,
+			WS_CHILD | WS_VISIBLE | ES_READONLY, 720, 100, 25, 25,
 			hWnd, (HMENU)IDF_SCORE_PL1, NULL, NULL);
-		// ç›¸æ‰‹ã®å¾—ç‚¹ç”¨ã‚¨ãƒ‡ã‚£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹
+		// ‘Šè‚Ì“¾“_—pƒGƒfƒBƒbƒgƒ{ƒbƒNƒX
 		hWndScore_pl2 = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-			WS_CHILD | WS_VISIBLE | ES_READONLY, 835, 25, 50, 25,
+			WS_CHILD | WS_VISIBLE | ES_READONLY, 845, 100, 25, 25,
 			hWnd, (HMENU)IDF_SCORE_PL2, NULL, NULL);
 
-		SockInit(hWnd);         // ã‚½ã‚±ãƒƒãƒˆåˆæœŸåŒ–
-		hPenBlack	= (HPEN)CreatePen(PS_SOLID, 3, RGB(0, 0, 0));		//é»’ãƒšãƒ³ä½œæˆ
-		hPenRed		= (HPEN)CreatePen(PS_SOLID, 3, RGB(255, 0, 0));		//èµ¤ãƒšãƒ³ä½œæˆ
+		SockInit(hWnd);         // ƒ\ƒPƒbƒg‰Šú‰»
+		hPenBlack = (HPEN)CreatePen(PS_SOLID, 3, RGB(0, 0, 0));		//•ƒyƒ“ì¬
+		hPenRed = (HPEN)CreatePen(PS_SOLID, 3, RGB(255, 0, 0));		//Ôƒyƒ“ì¬
+		//defSysColor[0] = GetSysColor(setSysColor[0]);
+		SetSysColors(1, setSysColor, newSysColor);
+
+		if (g_darkModeSupported)
+		{
+			_AllowDarkModeForWindow(hWnd, true);
+			RefreshTitleBarThemeColor(hWnd);
+		}
+
 		return 0L;
 	}
-	case WM_COMMAND:		// ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸ
+
+	case WM_COMMAND: // ƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½ê‡
 	{
-		switch (LOWORD(wP)) {
-		case IDB_ACCEPT:    // [æ¥ç¶šå¾…ã¡]ãƒœã‚¿ãƒ³æŠ¼ä¸‹(ã‚µãƒ¼ãƒãƒ¼)
-			if (SockAccept(hWnd)) {  // æ¥ç¶šå¾…ã¡è¦æ±‚
-				return 0L;      // æ¥ç¶šå¾…ã¡å¤±æ•—
+		
+		// Parse the menu selections:
+		switch (LOWORD(wP))
+		{
+		case IDM_ABOUT:
+			DialogBox(g_hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			break;
+		case IDM_EXIT:
+			DestroyWindow(hWnd);
+			break;
+		// System menu
+
+		case IDB_ACCEPT:			// [Ú‘±‘Ò‚¿]ƒ{ƒ^ƒ“‰Ÿ‚µ‚½ê‡(ƒT[ƒo[)
+			if (SockAccept(hWnd)) { // Ú‘±‘Ò‚¿—v‹
+				return 0L;			// Ú‘±‘Ò‚¿¸”s
+
 			}
-			enable_wait();
+			enable_wait();			//Ú‘±‘Ò‚¿‚Ìó‘Ô‚É‚·‚é
 			return 0L;
 
-		case IDB_CONNECT:   // [æ¥ç¶š]ãƒœã‚¿ãƒ³æŠ¼ä¸‹(ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆ)
-
+		case IDB_CONNECT:					// [Ú‘±]ƒ{ƒ^ƒ“‰Ÿ‚µ‚½ê‡(ƒNƒ‰ƒCƒAƒ“ƒg)
 			GetWindowText(hWndHost, host, sizeof(host));
-
-			if (SockConnect(hWnd, host)) {   // æ¥ç¶šè¦æ±‚
+			if (SockConnect(hWnd, host)) {  // Ú‘±—v‹
 				return 0L;
+
 			}
-			enable_wait();
+			enable_wait();					//Ú‘±‘Ò‚¿‚Ìó‘Ô‚É‚·‚é
 			return 0L;
 
-		case IDB_REJECT:    // [åˆ‡æ–­]ãƒœã‚¿ãƒ³æŠ¼ä¸‹
-			if (sock != INVALID_SOCKET) {    // è‡ªåˆ†ãŒã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆå´ãªã‚‰
-				// ã‚½ã‚±ãƒƒãƒˆã‚’é–‰ã˜ã‚‹
-				closesocket(sock);
+		case IDB_REJECT:					// [Ø’f]ƒ{ƒ^ƒ“‰Ÿ‚µ‚½ê‡
+
+			if (sock != INVALID_SOCKET) {   // ©•ª‚ªƒNƒ‰ƒCƒAƒ“ƒg‘¤‚È‚ç
+				closesocket(sock);			// ƒ\ƒPƒbƒg‚ğ•Â‚¶‚é
 				sock = INVALID_SOCKET;
+
 			}
-			if (sv_sock != INVALID_SOCKET) { // è‡ªåˆ†ãŒã‚µãƒ¼ãƒå´ãªã‚‰
-				// ã‚µãƒ¼ãƒç”¨ã‚½ã‚±ãƒƒãƒˆã‚’é–‰ã˜ã‚‹
-				closesocket(sv_sock);
+			if (sv_sock != INVALID_SOCKET) { // ©•ª‚ªƒT[ƒo‘¤‚È‚ç
+				closesocket(sv_sock);		 // ƒT[ƒo—pƒ\ƒPƒbƒg‚ğ•Â‚¶‚é
 				sv_sock = INVALID_SOCKET;
+
 			}
 			phe = NULL;
 			enable_standby();
 			return 0L;
 
-		case IDB_REJECTORDER:      // [åˆ‡æ–­è¦è«‹]ãƒœã‚¿ãƒ³æŠ¼ä¸‹
-			strcpy_s(buf, "REJECT");				// åˆ‡æ–­ã®å†…å®¹ã‚’ãƒãƒƒãƒ•ã‚¡ã«ä¿å­˜
-			send(sock, buf, strlen(buf) + 1, 0);	// REJECTã¨é€ä¿¡
+		case IDB_REJECTORDER:						// [Ø’f—v¿]ƒ{ƒ^ƒ“‰Ÿ‚µ‚½ê‡
+			strcpy_s(buf, "REJECT");				// Ø’f‚Ì“à—e‚ğƒoƒbƒtƒ@‚É•Û‘¶
+			send(sock, buf, strlen(buf) + 1, 0);	// REJECT‚Æ‘—M
 			return 0L;
 
-		case IDB_SEND:      // [é€ä¿¡]ãƒœã‚¿ãƒ³æŠ¼ä¸‹
+		case IDB_SEND:											// [‘—M]ƒ{ƒ^ƒ“‰Ÿ‚µ‚½ê‡
 			char sender[100];
-			GetWindowText(hWndSendMSG, buf, sizeof(buf) - 1);     // é€ä¿¡ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸å…¥åŠ›æ¬„ã®å†…å®¹ã‚’å–å¾—
-			sprintf_s(sender,"%s%s","MESS",buf);	//é€ä¿¡ã®å†…å®¹ã‚’ãƒãƒƒãƒ•ã‚¡ã«ä¿å­˜
-			if (send(sock, sender, strlen(sender) + 1, 0) == SOCKET_ERROR) {    // é€ä¿¡å‡¦ç†
-						// é€ä¿¡ã«å¤±æ•—ã—ãŸã‚‰ã‚¨ãƒ©ãƒ¼ã‚’è¡¨ç¤º
+
+			GetWindowText(hWndSendMSG, buf, sizeof(buf) - 1);   //‘—MƒƒbƒZ[ƒW“ü—Í—“‚Ì“à—e‚ğæ“¾
+			sprintf_s(sender, "%s%s", "MESS", buf);				//‘—M‚Ì“à—e‚Æ‚»‚Ì‘O‚ÉMESS‚ğ•t‚¯‚½‚à‚Ì‚ğƒoƒbƒtƒ@‚É•Û‘¶
+																// ‘—Mˆ—
+			if (send(sock, sender, strlen(sender) + 1, 0) == SOCKET_ERROR) {
+				// ‘—M‚É¸”s‚µ‚½‚çƒGƒ‰[‚ğ•\¦
 				MessageBox(hWnd, TEXT("sending failed"), TEXT("Error"),
 					MB_OK | MB_ICONEXCLAMATION);
+
 			}
-			
-			ChatReset(hWndSendMSG);//ãƒãƒ£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹ã®ã‚¯ãƒªã‚¢
+			ChatReset(hWndSendMSG);								//ƒ`ƒƒƒbƒgƒ{ƒbƒNƒX‚ÌƒNƒŠƒA
 			return 0L;
 
-		case IDB_GIVEUP:	// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]ãƒœã‚¿ãƒ³æŠ¼ä¸‹
-			strcpy_s(buf, "GIVEUP");			// ã‚®ãƒ–ã‚¢ãƒƒãƒ—ã®å†…å®¹ã‚’ãƒãƒƒãƒ•ã‚¡ã«ä¿å­˜
-			send(sock, buf, strlen(buf) + 1, 0);// GIVEUPã¨é€ä¿¡
-			score_Master = 1;					// è¦ªã¨å­ã®ç‚¹æ•°ã‚’ï¼‘ç‚¹ãšã¤ä»˜ä¸
+		case IDB_GIVEUP:									// [ƒMƒuƒAƒbƒv]ƒ{ƒ^ƒ“‰Ÿ‚µ‚½ê‡
+			strcpy_s(buf, "GIVEUP");						// ƒMƒuƒAƒbƒv‚Ì“à—e‚ğƒoƒbƒtƒ@‚É•Û‘¶
+			send(sock, buf, strlen(buf) + 1, 0);			// GIVEUP‚Æ‘—M
+			score_Master = 1;								// e‚Æq‚Ì“_”‚ğ‚P“_‚¸‚Â•t—^
 			score_Player = 1;
-			MessageBox(hWnd, "ã‚®ãƒ–ã‚¢ãƒƒãƒ—ã—ã¾ã—ãŸã€‚",
-				"Information", MB_OK | MB_ICONINFORMATION);
-			change(hWnd,score_Master, score_Player);	// äº¤ä»£
+			MessageBox(hWnd, "ƒMƒuƒAƒbƒv‚µ‚Ü‚µ‚½B",
+				"Information", MB_OK | MB_ICONINFORMATION);	//ƒMƒuƒAƒbƒv‚µ‚Ü‚µ‚½‚ÆƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚É•\¦‚·‚é
+			change(hWnd, score_Master, score_Player);		// Œğ‘ã
 			return 0L;
 
-		case IDB_CORRECT:   // [æ­£è§£]æŠ¼ä¸‹
-			strcpy_s(buf, "CORRECT");			// æ­£è§£ã®å†…å®¹ã‚’ãƒãƒƒãƒ•ã‚¡ã«ä¿å­˜
-			sprintf_s(sender, "%s%s%s", "CORRECT","ç­”ãˆ:", card_text[card[turn-1]][dice_num]);
-			send(sock, sender, strlen(sender) + 1, 0);
+		case IDB_CORRECT:								// [³‰ğ]‰Ÿ‚µ‚½ê‡
+			strcpy_s(buf, "CORRECT");					// ³‰ğ‚Ì“à—e‚ğƒoƒbƒtƒ@‚É•Û‘¶
+														//hCORRECTh‚Æh“š‚¦FhAŒ»İ‚Ì‚¨‘è‚ğ‘—M‚·‚é
+			sprintf_s(sender, "%s%s%s", "CORRECT", "“š‚¦:", card_text[card[turn - 1]][dice_num]);
+			send(sock, sender, strlen(sender) + 1, 0);	//‘—Mˆ—
 			enable_pause();
-			return 0L;	
-
-		case IDB_CLEAR:   // [ã‚¯ãƒªã‚¢]æŠ¼ä¸‹
-			strcpy_s(buf, "CLEAR");			// ã‚¯ãƒªã‚¢ã®å†…å®¹ã‚’ãƒãƒƒãƒ•ã‚¡ã«ä¿å­˜
-			send(sock, buf, strlen(buf) + 1, 0);
-			ClearPaint(hWnd, uMsg, wP, lP);
-			InvalidateRect(hWnd, &d, TRUE);
+			SetWindowText(hWndHelp, "‘Šè‚Ì”»’f‚ğ‘Ò‚Á‚Ä‚¢‚Ü‚·B");
 			return 0L;
 
-		case IDB_INCORRECT: // [ä¸æ­£è§£]æŠ¼ä¸‹
-			strcpy_s(buf, "INCORRECT");			// ä¸æ­£è§£ã®å†…å®¹ã‚’ãƒãƒƒãƒ•ã‚¡ã«ä¿å­˜
-			send(sock, buf, strlen(buf) + 1, 0);// INCORRECTã¨é€ä¿¡
+		case IDB_CLEAR:							// [ƒNƒŠƒA]‚ğ‰Ÿ‚µ‚½ê‡
+			strcpy_s(buf, "CLEAR");				// ƒNƒŠƒA‚Ì“à—e‚ğƒoƒbƒtƒ@‚É•Û‘¶
+			send(sock, buf, strlen(buf) + 1, 0);//‘—Mˆ—
+			ClearPaint(hWnd);		//‰æ–Ê‚ÌƒNƒŠƒA‚ğÀs
+			InvalidateRect(hWnd, &d, TRUE);		//”\“®“I‚ÉÄ•`‰æˆ—‚ğÀs
 			return 0L;
 
-		case IDB_POINTOUT:  // [æŒ‡æ‘˜]æŠ¼ä¸‹
-			strcpy_s(buf, "POINTOUT");			// æŒ‡æ‘˜ã®å†…å®¹ã‚’ãƒãƒƒãƒ•ã‚¡ã«ä¿å­˜
-			send(sock, buf, strlen(buf) + 1, 0);// POINTOUTã¨é€ä¿¡	
+		case IDB_INCORRECT:						// [•s³‰ğ]‚ğ‰Ÿ‚µ‚½ê‡
+			strcpy_s(buf, "INCORRECT");			// •s³‰ğ‚Ì“à—e‚ğƒoƒbƒtƒ@‚É•Û‘¶
+			send(sock, buf, strlen(buf) + 1, 0);// INCORRECT‚Æ‘—M
+			return 0L;
+
+		case IDB_POINTOUT:						// [w“E]‚ğ‰Ÿ‚µ‚½ê‡
+			strcpy_s(buf, "POINTOUT");			// w“E‚Ì“à—e‚ğƒoƒbƒtƒ@‚É•Û‘¶
+			send(sock, buf, strlen(buf) + 1, 0);// POINTOUT‚Æ‘—M	
 			enable_pointout_player();
+			SetWindowText(hWndHelp, "‘Šè‚Ì”»’f‚ğ‘Ò‚Á‚Ä‚¢‚Ü‚·B");
 			return 0L;
 
-		case IDB_CONSENT:   // [æ‰¿è«¾]æŠ¼ä¸‹
-			strcpy_s(buf, "CONSENT");           // æ‰¿è«¾ã®å†…å®¹ã‚’ãƒãƒƒãƒ•ã‚¡ã«ä¿å­˜
-			send(sock, buf, strlen(buf) + 1, 0);// CONSENTã¨é€ä¿¡
-			score_Master = 0;                   // è¦ªã«0ç‚¹ã€å­ã«1ç‚¹ã‚’ä»˜ä¸
+		case IDB_CONSENT:						// [³‘ø]‚ğ‰Ÿ‚µ‚½ê‡
+			strcpy_s(buf, "CONSENT");           // ³‘ø‚Ì“à—e‚ğƒoƒbƒtƒ@‚É•Û‘¶
+			send(sock, buf, strlen(buf) + 1, 0);// CONSENT‚Æ‘—M
+			score_Master = 0;                   // e‚É0“_Aq‚É1“_‚ğ•t—^
 			score_Player = 1;
-			change(hWnd, score_Master, score_Player);	// äº¤ä»£
+			// Œğ‘ã
+			change(hWnd, score_Master, score_Player);
 			return 0L;
 
-		case IDB_DENIAL:    // [å¦èª]æŠ¼ä¸‹
-			strcpy_s(buf, "DENIAL");			// å¦èªã®å†…å®¹ã‚’ãƒãƒƒãƒ•ã‚¡ã«ä¿å­˜
-			send(sock, buf, strlen(buf) + 1, 0);// DENIALã¨é€ä¿¡
-			if (rule_num == 0) {		//Aã‚’æ­£è§£
-				score_Master = 1;		//è¦ªã«1ç‚¹ã€å­ã«2ç‚¹ã‚’ä»˜ä¸
+		case IDB_DENIAL:						// [”Û”F]‚ğ‰Ÿ‚µ‚½ê‡
+			strcpy_s(buf, "DENIAL");			// ”Û”F‚Ì“à—e‚ğƒoƒbƒtƒ@‚É•Û‘¶
+			send(sock, buf, strlen(buf) + 1, 0);// DENIAL‚Æ‘—M
+
+			if (rule_num == 0) {				//A‚ğ³‰ğ
+				score_Master = 1;				//e‚É1“_Aq‚É2“_‚ğ•t—^
 				score_Player = 2;
+
 			}
-			else if (rule_num == 1) {	//Bã‚’æ­£è§£
-				score_Master = 1;		//è¦ªã«1ç‚¹ã€å­ã«3ç‚¹ã‚’ä»˜ä¸
+			else if (rule_num == 1) {			//B‚ğ³‰ğ
+				score_Master = 1;				//e‚É1“_Aq‚É3“_‚ğ•t—^
 				score_Player = 3;
+
 			}
-			else if (rule_num == 2) {	//Cã‚’æ­£è§£
-				score_Master = 1;		//è¦ªã«1ç‚¹ã€å­ã«5ç‚¹ã‚’ä»˜ä¸
+			else if (rule_num == 2) {			//C‚ğ³‰ğ
+				score_Master = 1;				//e‚É1“_Aq‚É5“_‚ğ•t—^
 				score_Player = 5;
-			}
-			change(hWnd,score_Master, score_Player);	// äº¤ä»£
+
+			}									// Œğ‘ã
+			change(hWnd, score_Master, score_Player);
 			return 0L;
 
-		case IDB_CHANGE:    // [äº¤ä»£]æŠ¼ä¸‹
-			strcpy_s(buf, "CHANGE");             // äº¤ä»£ã®å†…å®¹ã‚’ãƒãƒƒãƒ•ã‚¡ã«ä¿å­˜
-			send(sock, buf, strlen(buf) + 1, 0); // CHANGEã¨é€ä¿¡
-			if (rule_num == 0) {		//Aã‚’æ­£è§£
-				score_Master = 1;		//è¦ªã«1ç‚¹ã€å­ã«2ç‚¹ã‚’ä»˜ä¸
+		case IDB_CHANGE:						// [Œğ‘ã]‚ğ‰Ÿ‚µ‚½ê‡
+			strcpy_s(buf, "CHANGE");            // Œğ‘ã‚Ì“à—e‚ğƒoƒbƒtƒ@‚É•Û‘¶
+			send(sock, buf, strlen(buf) + 1, 0);// CHANGE‚Æ‘—M
+
+			if (rule_num == 0) {				//A‚ğ³‰ğ
+				score_Master = 1;				//e‚É1“_Aq‚É2“_‚ğ•t—^
 				score_Player = 2;
-			}
-			else if (rule_num == 1) {	//Bã‚’æ­£è§£
-				score_Master = 1;		//è¦ªã«1ç‚¹ã€å­ã«3ç‚¹ã‚’ä»˜ä¸
-				score_Player = 3;
-			}
-			else if (rule_num == 2) {	//Cã‚’æ­£è§£
-				score_Master = 1;		//è¦ªã«1ç‚¹ã€å­ã«5ç‚¹ã‚’ä»˜ä¸
-				score_Player = 5;
-			}
-			change(hWnd, score_Master, score_Player);  // äº¤ä»£
-			return 0L;
 
+			}
+			else if (rule_num == 1) {			//B‚ğ³‰ğ
+				score_Master = 1;				//e‚É1“_Aq‚É3“_‚ğ•t—^
+				score_Player = 3;
+
+			}
+			else if (rule_num == 2) {			//C‚ğ³‰ğ
+				score_Master = 1;				//e‚É1“_Aq‚É5“_‚ğ•t—^
+				score_Player = 5;
+
+			}									// Œğ‘ã
+			change(hWnd, score_Master, score_Player);
+			return 0L;
+		default:
+			return DefWindowProcW(hWnd, uMsg, wP, lP);
 		} /* end of switch (LOWORD(wP)) */
-
 		return 0L;
 	}
-	case WM_LBUTTONDOWN:    // ãƒã‚¦ã‚¹å·¦ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸ
+	break;
+	case WM_SIZE:
 	{
-		if ((checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE )&& (DrawableFlag==1)) {  // æç”»é ˜åŸŸã®ä¸­ãªã‚‰
-			setData(0, LOWORD(lP), HIWORD(lP), hPenBlack);    // ç·šã®å§‹ç‚¹ã¨ã—ã¦åº§æ¨™ã‚’è¨˜éŒ²
-			FXY(0, LOWORD(lP), HIWORD(lP));                   // ç·šã®å§‹ç‚¹ã¨ã—ã¦åº§æ¨™ã‚’è¨˜éŒ²
-			mouseFlg = TRUE;
-			n++;
-			InvalidateRect(hWnd, &d, FALSE);
-		}
-		return 0L;
-	}
-	
-	case WM_MOUSEMOVE:  // ãƒã‚¦ã‚¹ãƒã‚¤ãƒ³ã‚¿ãŒç§»å‹•ã—ãŸ
-	{
-		if (wP == MK_LBUTTON) {  // å·¦ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚Œã¦ã„ã‚‹
-			if ((checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE )&&( DrawableFlag == 1)) {		// æç”»é ˜åŸŸã®ä¸­ãªã‚‰
-				if (mouseFlg) {										// å‰å›æç”»ã—ã¦ã„ã‚‹ãªã‚‰
-					setData(1, LOWORD(lP), HIWORD(lP), hPenBlack);   // ç·šã®é€”ä¸­ã¨ã—ã¦åº§æ¨™ã‚’è¨˜éŒ²
-					FXY(1, LOWORD(lP), HIWORD(lP));					// ç·šã®é€”ä¸­ã¨ã—ã¦åº§æ¨™ã‚’é€ä¿¡
-				}
-				else {												// å‰å›æç”»ã—ã¦ã„ãªã„ãªã‚‰
-					setData(0, LOWORD(lP), HIWORD(lP), hPenBlack);   // ç·šã®å§‹ç‚¹ã¨ã—ã¦åº§æ¨™ã‚’è¨˜éŒ²
-					FXY(0, LOWORD(lP), HIWORD(lP));					// ç·šã®å§‹ç‚¹ã¨ã—ã¦åº§æ¨™ã‚’é€ä¿¡
-				}
-				
-				n++;
-				mouseFlg = TRUE;
-				InvalidateRect(hWnd, &d, FALSE);
-			}
-			else {                     // æç”»é ˜åŸŸã®å¤–ãªã‚‰
-				mouseFlg = FALSE;
-			}
-		}
-		
-
-		return 0L;
-	}
-	case WM_SOCKET:          // éåŒæœŸå‡¦ç†ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸
-	{
-		if (WSAGETSELECTERROR(lP) != 0) { return 0L; }
-
-		switch (WSAGETSELECTEVENT(lP)) {
-		case FD_ACCEPT:     // æ¥ç¶šå¾…ã¡å®Œäº†é€šçŸ¥
+		int clientWidth = GET_X_LPARAM(lP), clientHeight = GET_Y_LPARAM(lP);
+		HDWP hDWP = BeginDeferWindowPos(1);
+		if (hDWP != nullptr)
 		{
+			DeferWindowPos(hDWP, g_hWndListView, 0, 0, 0, clientWidth, clientHeight, SWP_NOZORDER);
+			EndDeferWindowPos(hDWP);
+		}
+	}
+	break;
+	case WM_SETTINGCHANGE:
+	{
+		if (IsColorSchemeChangeMessage(lP))
+		{
+			g_darkModeEnabled = _ShouldAppsUseDarkMode() && !IsHighContrast();
 
+			RefreshTitleBarThemeColor(hWnd);
+			SendMessageW(g_hWndListView, WM_THEMECHANGED, 0, 0);
+		}
+	}
+	break;
+	case WM_LBUTTONDOWN:    // ƒ}ƒEƒX¶ƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚½
+															// •`‰æ—Ìˆæ‚Ì’†‚Å•`‰æ‰Â”\ƒtƒ‰ƒO‚ª‚P‚Å‚ ‚é‚È‚ç‚Î
+		if ((checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE) && (DrawableFlag == 1)) {
+			setData(0, LOWORD(lP), HIWORD(lP), hPenBlack);  // ü‚Ìn“_‚Æ‚µ‚ÄÀ•W‚ğ‹L˜^
+			FXY(0, LOWORD(lP), HIWORD(lP));                 // ü‚Ìn“_‚Æ‚µ‚ÄÀ•W‚ğ‹L˜^
+			mouseFlg = TRUE;								//mouseFlag‚ğTRUE‚Æ‚·‚é
+			n++;											//ƒJƒEƒ“ƒ^‚ğ‘‰Á‚·‚é
+			InvalidateRect(hWnd, &d, FALSE);				//”\“®“I‚ÉÄ•`‰æ‚·‚é
+
+		}
+		return 0L;
+
+	case WM_MOUSEMOVE:  // ƒ}ƒEƒXƒ|ƒCƒ“ƒ^‚ªˆÚ“®‚µ‚½
+
+		if (wP == MK_LBUTTON) {  // ¶ƒ{ƒ^ƒ“‚ª‰Ÿ‚³‚ê‚Ä‚¢‚é
+																	// •`‰æ—Ìˆæ‚Ì’†‚È‚ç
+			if ((checkMousePos(LOWORD(lP), HIWORD(lP)) == TRUE) && (DrawableFlag == 1)) {
+
+				if (mouseFlg) {										// ‘O‰ñ•`‰æ‚µ‚Ä‚¢‚é‚È‚ç
+					setData(1, LOWORD(lP), HIWORD(lP), hPenBlack);   // ü‚Ì“r’†‚Æ‚µ‚ÄÀ•W‚ğ‹L˜^
+					FXY(1, LOWORD(lP), HIWORD(lP));					// ü‚Ì“r’†‚Æ‚µ‚ÄÀ•W‚ğ‘—M
+
+				}
+				else {												// ‘O‰ñ•`‰æ‚µ‚Ä‚¢‚È‚¢‚È‚ç
+					setData(0, LOWORD(lP), HIWORD(lP), hPenBlack);  // ü‚Ìn“_‚Æ‚µ‚ÄÀ•W‚ğ‹L˜^
+					FXY(0, LOWORD(lP), HIWORD(lP));					// ü‚Ìn“_‚Æ‚µ‚ÄÀ•W‚ğ‘—M
+
+				}
+				n++;												//ƒJƒEƒ“ƒ^‚ğ‘‰Á
+				mouseFlg = TRUE;									//mouseFlag‚ğTRUE‚Æ‚·‚é
+				InvalidateRect(hWnd, &d, FALSE);					//”\“®“I‚ÉÄ•`‰æ‚ğ‚·‚é
+
+			}
+			else {													// •`‰æ—Ìˆæ‚ÌŠO‚È‚ç
+				mouseFlg = FALSE;									//mouseFlag‚ğFALSE‚Æ‚·‚é
+
+			}
+
+		}
+		return 0L;
+
+	case WM_SOCKET:          // ”ñ“¯Šúˆ—ƒƒbƒZ[ƒW
+
+		if (WSAGETSELECTERROR(lP) != 0) { return 0L; }
+		switch (WSAGETSELECTEVENT(lP)) {
+		case FD_ACCEPT:						// Ú‘±‘Ò‚¿Š®—¹’Ê’m
+		{									//Ú‘±—v‹‚ÌŠm”F
 			sock = accept(sv_sock, (LPSOCKADDR)&cl_sin, &len);
 
-			if (sock == INVALID_SOCKET) {
+			if (sock == INVALID_SOCKET) {	//ƒNƒ‰ƒCƒAƒ“ƒg‘¤‚Ìƒ\ƒPƒbƒg‚ªINVALID_SOCKET‚ğ¦‚µ‚Ä‚¢‚½‚È‚ç‚Î
+											//ƒGƒ‰[ƒƒbƒZ[ƒW‚ğ•\¦‚·‚é
 				MessageBox(hWnd, "Accepting connection failed",
 					"Error", MB_OK | MB_ICONEXCLAMATION);
-				closesocket(sv_sock);
-				sv_sock = INVALID_SOCKET;
-				enable_standby();
+				closesocket(sv_sock);		//ƒT[ƒo—p‚Ìƒ\ƒPƒbƒg‚ğ•Â‚¶‚é
+				sv_sock = INVALID_SOCKET;	//ƒT[ƒo—p‚Ìƒ\ƒPƒbƒg‚ğINVALID_SOCKET‚Æ‚·‚é
+				enable_standby();			//ƒAƒvƒŠƒP[ƒVƒ‡ƒ“ŠJn‚Ìó‘Ô‚É‚·‚é
 				return 0L;
+
 			}
-
 #ifndef NO_DNS
-			// ãƒ›ã‚¹ãƒˆåå–å¾—
+			// ƒzƒXƒg–¼æ“¾
 			phe = gethostbyaddr((char*)&cl_sin.sin_addr, 4, AF_INET);
-			if (phe) { SetWindowText(hWndHost, phe->h_name);}
+			if (phe) { SetWindowText(hWndHost, phe->h_name); }
 #endif  NO_DNS
-
-			// éåŒæœŸãƒ¢ãƒ¼ãƒ‰ (å—ä¿¡ï¼†åˆ‡æ–­ï¼‰
-			if (WSAAsyncSelect(sock, hWnd, WM_SOCKET, FD_READ | FD_CLOSE)
-				== SOCKET_ERROR) {
-				// æ¥ç¶šã«å¤±æ•—ã—ãŸã‚‰åˆæœŸçŠ¶æ…‹ã«æˆ»ã™
+			// ”ñ“¯Šúƒ‚[ƒh (óM•Ø’fj
+			if (WSAAsyncSelect(sock, hWnd, WM_SOCKET, FD_READ | FD_CLOSE) == SOCKET_ERROR) {
+				// Ú‘±‚É¸”s‚µ‚½‚ç‰Šúó‘Ô‚É–ß‚·
+				//ƒGƒ‰[ƒƒbƒZ[ƒW‚ğ•\¦‚·‚é
 				MessageBox(hWnd, "WSAAsyncSelect() failed",
 					"Error", MB_OK | MB_ICONEXCLAMATION);
-				enable_standby();
+				enable_standby();			//ƒAƒvƒŠƒP[ƒVƒ‡ƒ“ŠJn‚Ìó‘Ô‚É‚·‚é
 				return 0L;
+
 			}
-			Use_PL = 1;
-			FlagPlayer = 1;	//è¦ªã¨ã—ã¦ã‚²ãƒ¼ãƒ ã‚’é–‹å§‹
-			game_start(hWnd);	//è¦ªã‚’0ç‚¹å­ã‚’0ç‚¹ã¨ã—ã¦ã‚²ãƒ¼ãƒ ã‚’é–‹å§‹ã™ã‚‹
+
+			Use_PL = 1;						//PL‚P‚Æ‚·‚é
+			FlagPlayer = 1;					//e‚Æ‚µ‚ÄƒQ[ƒ€‚ğŠJn
+			game_start(hWnd);				//e‚ğ0“_q‚ğ0“_‚Æ‚µ‚ÄƒQ[ƒ€‚ğŠJn‚·‚é
 			return 0L;
+
 		}/* end of case FD_ACCEPT: */
 
-		case FD_CONNECT:    // æ¥ç¶šå®Œäº†é€šçŸ¥
-			// éåŒæœŸãƒ¢ãƒ¼ãƒ‰ (å—ä¿¡ï¼†åˆ‡æ–­)
-			if (WSAAsyncSelect(sock, hWnd, WM_SOCKET, FD_READ | FD_CLOSE)
-				== SOCKET_ERROR) {
-				// æ¥ç¶šã«å¤±æ•—ã—ãŸã‚‰åˆæœŸçŠ¶æ…‹ã«æˆ»ã™
-
+		case FD_CONNECT:					// Ú‘±Š®—¹’Ê’m
+											// ”ñ“¯Šúƒ‚[ƒh (óM•Ø’f)
+			if (WSAAsyncSelect(sock, hWnd, WM_SOCKET, FD_READ | FD_CLOSE) == SOCKET_ERROR) {
+				// Ú‘±‚É¸”s‚µ‚½‚ç‰Šúó‘Ô‚É–ß‚·
+				//ƒGƒ‰[ƒƒbƒZ[ƒW‚ğ•\¦‚·‚é
 				MessageBox(hWnd, "WSAAsyncSelect() failed",
 					"Error", MB_OK | MB_ICONEXCLAMATION);
-				enable_standby();
+				enable_standby();			//ƒAƒvƒŠƒP[ƒVƒ‡ƒ“ŠJn‚Ìó‘Ô‚É‚·‚é
 				return 0L;
 			}
 
-			Use_PL = 0;
-			game_start(hWnd);		//é€šä¿¡è¦ª0ç‚¹ã€å­0ç‚¹ã¨ã—ã¦ã‚²ãƒ¼ãƒ ã‚’é–‹å§‹ã™ã‚‹
+			Use_PL = 0;						//PL‚Q‚Æ‚·‚é
+			game_start(hWnd);				//’ÊMe0“_Aq0“_‚Æ‚µ‚ÄƒQ[ƒ€‚ğŠJn‚·‚é
 			return 0L;
 
-		case FD_READ:									//ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸å—ä¿¡
-			char b[100];
+		case FD_READ:										//ƒƒbƒZ[ƒWóM
+			char b[100];									//buf‚Ì‘ã‚í‚è‚É—p‚¢‚é
 
-			if (recv(sock, buf, sizeof(buf) - 1, 0) != SOCKET_ERROR) { // å—ä¿¡ã§ããŸãªã‚‰			
-				if (strncmp(buf, "MESS",4) == 0) {		//ãƒãƒ£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹ã®å†…å®¹ãŒ
-														//é€ã‚‰ã‚ŒãŸå ´åˆ
-					strncpy_s(b,buf+4,sizeof(buf)-4);	//4æ–‡å­—ç›®ä»¥é™ã®å†…å®¹ã‚’å¤‰æ•°bã«æ ¼ç´
-					SetWindowText(hWndRecvMSG,b);		//bã®å†…å®¹ã‚’é€ä¿¡
-					return 0L;
-
-				}else if (strncmp(buf, "RULE",4) == 0) {	//ãƒ«ãƒ¼ãƒ«ãŒé€ã‚‰ã‚Œã¦ããŸå ´åˆ
-					strncpy_s(b, buf + 4, sizeof(buf) - 4);	//4æ–‡å­—ç›®ä»¥é™ã®å†…å®¹ã‚’å¤‰æ•°bã«æ ¼ç´
-					rule_num = atoi(b);						//bã‹ã‚‰intå‹ã«å¤‰ãˆãŸã‚‚ã®ã‚’rule_numã«æ ¼ç´
-					SetWindowText(hWndRule, rule[rule_num]);//rule_numã«å¯¾å¿œã—ãŸãƒ«ãƒ¼ãƒ«ã‚’æç¤ºã™ã‚‹
-					return 0L;
-				}
-				else if (strcmp(buf, "REJECT") == 0) {		//REJECTãŒé€ã‚‰ã‚Œã¦ããŸå ´åˆ
-															//åˆ‡æ–­è¦è«‹ãŒæ¥ãŸã¨ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒœãƒƒã‚¯ã‚¹ã«è¡¨ç¤ºã™ã‚‹
-					MessageBox(hWnd, "åˆ‡æ–­è¦è«‹ãŒãã¾ã—ãŸã€‚",
-						"Information", MB_OK | MB_ICONINFORMATION);
-					return 0L;
-				}
-				if (strncmp(buf, "CORRECT", 7) == 0) {		//æ­£è§£ã ã£ãŸå ´åˆ
-															//é€ã‚‰ã‚ŒãŸå ´åˆ
-					strncpy_s(b, buf + 7, sizeof(buf) - 7);	//7æ–‡å­—ç›®ä»¥é™ã®å†…å®¹ã‚’å¤‰æ•°bã«æ ¼ç´
-					SetWindowText(hWndRecvMSG, b);			//å•é¡Œã®å†…å®¹ã‚’å—ä¿¡ãƒœãƒƒã‚¯ã‚¹ã«è²¼ã‚‹
-					MessageBox(hWnd, "æ­£è§£ã§ã™ï¼",
-						"Information", MB_OK | MB_ICONINFORMATION);
-					enable_correct();
-					return 0L;
-				}
-				else if (strcmp(buf, "POINTOUT") == 0) {
-					MessageBox(hWnd, "æŒ‡æ‘˜ç‚¹ãŒã‚ã‚Šã¾ã™ï¼",
-						"Information", MB_OK | MB_ICONINFORMATION);
-					enable_pointout_master();
+			if (recv(sock, buf, sizeof(buf) - 1, 0) != SOCKET_ERROR) {
+				// óM‚Å‚«‚½‚È‚ç			
+				if (strncmp(buf, "MESS", 4) == 0) {			//ƒ`ƒƒƒbƒgƒ{ƒbƒNƒX‚Ì“à—e‚ª
+															//‘—‚ç‚ê‚½ê‡
+					strncpy_s(b, buf + 4, sizeof(buf) - 4);	//4•¶š–ÚˆÈ~‚Ì“à—e‚ğ•Ï”b‚ÉŠi”[
+					SetWindowText(hWndRecvMSG, b);			//b‚Ì“à—e‚ğ‘—M
 					return 0L;
 
 				}
-				else if (strcmp(buf, "CLEAR") == 0) {
-					ClearPaint(hWnd, uMsg, wP, lP);
-					InvalidateRect(hWnd, &d, TRUE);
+				else if (strncmp(buf, "RULE", 4) == 0) {	//ƒ‹[ƒ‹‚ª‘—‚ç‚ê‚Ä‚«‚½ê‡
+					strncpy_s(b, buf + 4, sizeof(buf) - 4);	//4•¶š–ÚˆÈ~‚Ì“à—e‚ğ•Ï”b‚ÉŠi”[
+					rule_num = atoi(b);						//b‚©‚çintŒ^‚É•Ï‚¦‚½‚à‚Ì‚ğrule_num‚ÉŠi”[
+					SetWindowText(hWndRule, rule[rule_num]);//rule_num‚É‘Î‰‚µ‚½ƒ‹[ƒ‹‚ğ’ñ¦‚·‚é
 					return 0L;
+
 				}
-				else if (strcmp(buf, "CHANGE") == 0) {//æŒ‡æ‘˜ã‚’èªã‚ãªã„ã‹ã€
-					if (rule_num == 0) {		//Aã‚’æ­£è§£
-						score_Master = 1;		//è¦ªã«1ç‚¹ã€å­ã«2ç‚¹ã‚’ä»˜ä¸
+				else if (strcmp(buf, "REJECT") == 0) {		//REJECT‚ª‘—‚ç‚ê‚Ä‚«‚½ê‡
+														   //Ø’f—v¿‚ª—ˆ‚½‚ÆƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚É•\¦‚·‚é
+					MessageBox(hWnd, "Ø’f—v¿‚ª‚«‚Ü‚µ‚½B",
+						"Information", MB_OK | MB_ICONINFORMATION);
+					return 0L;
+
+				}
+				else if (strncmp(buf, "CORRECT", 7) == 0) {//³‰ğ‚¾‚Á‚½ê‡
+					strncpy_s(b, buf + 7, sizeof(buf) - 7);	//7•¶š–ÚˆÈ~‚Ì“à—e‚ğ•Ï”b‚ÉŠi”[
+					SetWindowText(hWndRecvMSG, b);			//–â‘è‚Ì“à—e‚ğóMƒ{ƒbƒNƒX‚É“\‚é
+					MessageBox(hWnd, "³‰ğ‚Å‚·I",			//ƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚É³‰ğ‚Å‚ ‚é‚±‚Æ‚ğ•\¦‚·‚é
+						"Information", MB_OK | MB_ICONINFORMATION);
+					enable_correct();						//³‰ğ‚Ìó‘Ô‚É‚·‚é
+					SetWindowText(hWndHelp, "‘Šè‚ªˆá”½sˆ×‚ğ‚µ‚Ä‚¢‚½‚ÆŠ´‚¶‚½‚çw“E‚ğ‰Ÿ‚µ‚Ä‚­‚¾‚³‚¢B\r\n–â‘è‚È‚¢ê‡‚ÍŒğ‘ã‚ğ‰Ÿ‚µ‚Ä‚­‚¾‚³‚¢B");
+					return 0L;
+
+				}
+				else if (strcmp(buf, "POINTOUT") == 0) {	//w“E‚ª—ˆ‚½ê‡
+					MessageBox(hWnd, "w“E“_‚ª‚ ‚è‚Ü‚·I",	//ƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚Éw“E‚ª‚ ‚é|‚ğ•\¦
+						"Information", MB_OK | MB_ICONINFORMATION);
+					enable_pointout_master();				//w“E‚ª—ˆ‚½‚Ìó‘Ô‚É‚·‚é
+					SetWindowText(hWndHelp, "w“E‚ğ”F‚ß‚éê‡‚Í³”F‚ğ‰Ÿ‚µ‚Ä‚­‚¾‚³‚¢B\r\n”F‚ß‚È‚¢ê‡‚Í”Û”F‚ğ‰Ÿ‚µ‚Ä‚­‚¾‚³‚¢B");
+					return 0L;
+
+				}
+				else if (strcmp(buf, "CLEAR") == 0) {		//•`‰æƒ{ƒbƒNƒX‚ğƒNƒŠƒA‚·‚é‚±‚Æ‚ğ‹‚ß‚ç‚ê‚½ê‡
+					ClearPaint(hWnd);			//•`‰æƒ{ƒbƒNƒX‚ğƒNƒŠƒA‚·‚é
+					InvalidateRect(hWnd, &d, TRUE);			//”\“®“I‚ÉÄ•`‰æ‚·‚é
+					return 0L;
+
+				}
+				else if (strcmp(buf, "CHANGE") == 0) {		//Œğ‘ã‚·‚éê‡
+					if (rule_num == 0) {					//A‚ğ³‰ğ
+						score_Master = 1;					//e‚É1“_Aq‚É2“_‚ğ•t—^
 						score_Player = 2;
+
 					}
-					else if (rule_num == 1) {	//Bã‚’æ­£è§£
-						score_Master = 1;		//è¦ªã«1ç‚¹ã€å­ã«3ç‚¹ã‚’ä»˜ä¸
+					else if (rule_num == 1) {				//B‚ğ³‰ğ
+						score_Master = 1;					//e‚É1“_Aq‚É3“_‚ğ•t—^
 						score_Player = 3;
+
 					}
-					else if (rule_num == 2) {	//Cã‚’æ­£è§£
-						score_Master = 1;		//è¦ªã«1ç‚¹ã€å­ã«5ç‚¹ã‚’ä»˜ä¸
+					else if (rule_num == 2) {				//C‚ğ³‰ğ
+						score_Master = 1;					//e‚É1“_Aq‚É5“_‚ğ•t—^
 						score_Player = 5;
-					}
-					change(hWnd, score_Master, score_Player);		//äº¤ä»£
+
+					}										//Œğ‘ã‚·‚é
+
+					change(hWnd, score_Master, score_Player);
 					return 0L;
+
 				}
-				else if (strcmp(buf, "DENIAL") == 0) {
-					if (rule_num == 0) {		//Aã‚’æ­£è§£
-						score_Master = 1;		//è¦ªã«1ç‚¹ã€å­ã«2ç‚¹ã‚’ä»˜ä¸
+				else if (strcmp(buf, "DENIAL") == 0) {		//w“E‚ğ”Û’è‚µ‚½ê‡
+
+					if (rule_num == 0) {					//A‚ğ³‰ğ
+						score_Master = 1;					//e‚É1“_Aq‚É2“_‚ğ•t—^
 						score_Player = 2;
+
 					}
-					else if (rule_num == 1) {	//Bã‚’æ­£è§£
-						score_Master = 1;		//è¦ªã«1ç‚¹ã€å­ã«3ç‚¹ã‚’ä»˜ä¸
+					else if (rule_num == 1) {				//B‚ğ³‰ğ
+						score_Master = 1;					//e‚É1“_Aq‚É3“_‚ğ•t—^
 						score_Player = 3;
+
 					}
-					else if (rule_num == 2) {	//Cã‚’æ­£è§£
-						score_Master = 1;		//è¦ªã«1ç‚¹ã€å­ã«5ç‚¹ã‚’ä»˜ä¸
+					else if (rule_num == 2) {				//C‚ğ³‰ğ
+						score_Master = 1;					//e‚É1“_Aq‚É5“_‚ğ•t—^
 						score_Player = 5;
+
 					}
-					change(hWnd, score_Master, score_Player);		//äº¤ä»£
+
+					change(hWnd, score_Master, score_Player);//Œğ‘ã‚·‚é
 					return 0L;
+
 				}
-				else if (strcmp(buf, "CONSENT") == 0) {		//æŒ‡æ‘˜ã‚’æ‰¿èª
-					score_Master = 0;						//è¦ªã«0ç‚¹ã€å­ã«1ç‚¹ã‚’ä»˜ä¸
+				else if (strcmp(buf, "CONSENT") == 0) {	//w“E‚ğ³”F
+					score_Master = 0;						//e‚É0“_Aq‚É1“_‚ğ•t—^
 					score_Player = 1;
-					change(hWnd, score_Master, score_Player);		//äº¤ä»£
+					change(hWnd, score_Master, score_Player);//Œğ‘ã‚·‚é
 					return 0L;
+
 				}
-				else if (strcmp(buf, "GIVEUP") == 0) {		//ã‚®ãƒ–ã‚¢ãƒƒãƒ—
-					score_Master = 1;						//è¦ªã«1ç‚¹ã€å­ã«1ç‚¹ã‚’ä»˜ä¸
+				else if (strcmp(buf, "GIVEUP") == 0) {		//ƒMƒuƒAƒbƒv
+					score_Master = 1;						//e‚É1“_Aq‚É1“_‚ğ•t—^
 					score_Player = 1;
-					MessageBox(hWnd, "ç›¸æ‰‹ãŒã‚®ãƒ–ã‚¢ãƒƒãƒ—ã—ã¾ã—ãŸ",
+					//‘Šè‚ªƒMƒuƒAƒbƒv‚µ‚½|‚ğƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚É•\¦
+					MessageBox(hWnd, "‘Šè‚ªƒMƒuƒAƒbƒv‚µ‚Ü‚µ‚½",
 						"Information", MB_OK | MB_ICONINFORMATION);
-					change(hWnd, score_Master, score_Player);		//äº¤ä»£
+					change(hWnd, score_Master, score_Player);//Œğ‘ã‚·‚é
 					return 0L;
+
 				}
-				else if (strcmp(buf, "POINTOUT") == 0) {	//æŒ‡æ‘˜ãŒæ¥ãŸ
-					MessageBox(hWnd, "æŒ‡æ‘˜ç‚¹ãŒã‚ã‚Šã¾ã™ï¼",
+				else if (strcmp(buf, "POINTOUT") == 0) {	//w“E‚ª—ˆ‚½ê‡
+					MessageBox(hWnd, "w“E“_‚ª‚ ‚è‚Ü‚·I",	//w“E‚ª—ˆ‚½|‚ğƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚É•\¦
 						"Information", MB_OK | MB_ICONINFORMATION);
 					return 0L;
+
 				}
-				else if (strcmp(buf, "INCORRECT") == 0) {	//ä¸æ­£è§£ã§ã‚ã‚‹ãªã‚‰ã°
-					strncpy_s(buf,"ä¸æ­£è§£ã§ã™",10);
+				else if (strcmp(buf, "INCORRECT") == 0) {	//•s³‰ğ‚Å‚ ‚é‚È‚ç‚Î
+					strncpy_s(buf, "•s³‰ğ‚Å‚·", 10);		//•s³‰ğ‚Å‚ ‚é|‚ğóMƒ`ƒƒƒbƒgƒ{ƒbƒNƒX‚É•\¦
 					SetWindowText(hWndRecvMSG, buf);
 					return 0L;
+
 				}
-				else{										//ãã‚Œä»¥å¤–ãªã‚‰ã°
-					sscanf_s(buf, "%1d%03d%03d", &flag2, &x2, &y2);										
-					setData(flag2, x2, y2, hPenRed);
-					n++;
-					InvalidateRect(hWnd, &d, FALSE);
+				else {										//‚»‚êˆÈŠO‚È‚ç‚Î
+					sscanf_s(buf, "%1d%03d%03d", &flag2, &x2, &y2);
+					//À•W‚ğŒÂ•Ê‚ÉŠl“¾‚·‚é
+					setData(flag2, x2, y2, hPenRed);		//Ôƒyƒ“‚Å•`‰æ‚Å‚«‚é‚æ‚¤‚Éƒf[ƒ^‚ğ•Û‘¶‚·‚é
+					n++;									//ƒJƒEƒ“ƒ^‚ğ‘‰Á‚·‚é
+					InvalidateRect(hWnd, &d, FALSE);		//”\“®“I‚ÉÄ•`‰æ‚·‚é
 					return 0L;
+
 				}
+
 			}
+
 			return 0L;
 
-		case FD_CLOSE:      // åˆ‡æ–­ã•ã‚ŒãŸ
-			MessageBox(hWnd, "åˆ‡æ–­ã•ã‚Œã¾ã—ãŸã€‚",
+		case FD_CLOSE:										// Ø’f‚³‚ê‚½ê‡
+			MessageBox(hWnd, "Ø’f‚³‚ê‚Ü‚µ‚½B",			//Ø’f‚³‚ê‚½|‚ğƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚É•\¦
 				"Information", MB_OK | MB_ICONINFORMATION);
-			SendMessage(hWnd, WM_COMMAND, IDB_REJECT, 0); // åˆ‡æ–­å‡¦ç†ç™ºè¡Œ
+			SendMessage(hWnd, WM_COMMAND, IDB_REJECT, 0); // Ø’fˆ—”­s
 			return 0L;
 
 		}/* end of switch (WSAGETSELECTEVENT(lP)) */
+		return 0L;
 
+	case WM_DESTROY:				// ƒEƒBƒ“ƒhƒE‚ª”jŠü‚³‚ê‚½
+		DeleteObject(hPenBlack);    // •ƒyƒ“íœ
+		DeleteObject(hPenRed);      // Ôƒyƒ“íœ
+		SetSysColors(1, setSysColor, defSysColor);
+		closesocket(sock);          // ƒ\ƒPƒbƒg‚ğ•Â‚¶‚é
+		PostQuitMessage(0);         // I—¹ˆ—
 		return 0L;
-	}
-	case WM_DESTROY:    // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒç ´æ£„ã•ã‚ŒãŸ
-	{
-		DeleteObject(hPenBlack);    // é»’ãƒšãƒ³å‰Šé™¤
-		DeleteObject(hPenRed);      // èµ¤ãƒšãƒ³å‰Šé™¤
-		closesocket(sock);          // ã‚½ã‚±ãƒƒãƒˆã‚’é–‰ã˜ã‚‹
-		PostQuitMessage(0);         // çµ‚äº†å‡¦ç†
+
+	case WM_PAINT:      // Ä•`‰æ
+		return OnPaint(hWnd, uMsg, wP, lP);  // •`‰æŠÖ”‚ÌŒÄ‚Ño‚µ
 		return 0L;
-	}
-	case WM_PAINT:      // å†æç”»
-	{
-		return OnPaint(hWnd, uMsg, wP, lP);  // æç”»é–¢æ•°ã®å‘¼ã³å‡ºã—
-		return 0L;
-	}
+
 	default:
-	{
-		return DefWindowProc(hWnd, uMsg, wP, lP);  // æ¨™æº–ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸å‡¦ç†
+		return DefWindowProcW(hWnd, uMsg, wP, lP);
 	}
-	}/* end of switch (uMsg) */
+	return 0;
 }
 
 
-//  æç”»é–¢æ•°
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR    lpCmdLine,
+	_In_ int       nCmdShow)
+{
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	InitDarkMode();
+
+	if (!g_darkModeSupported)
+	{
+		TaskDialog(nullptr, hInstance, L"Error", nullptr, L"Darkmode is not supported.", TDCBF_OK_BUTTON, TD_ERROR_ICON, nullptr);
+	}
+
+	WNDCLASSEXW wc{};
+	wc.cbSize = sizeof(WNDCLASSEX);
+	wc.lpfnWndProc = WindowProc;
+	wc.hInstance = hInstance;
+	wc.hIcon = LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_WIN32DARKMODE));
+	wc.hCursor = LoadCursorW(nullptr, NULL);
+	wc.hbrBackground = CreateSolidBrush(RGB(25, 25, 25));
+	wc.lpszMenuName = MAKEINTRESOURCEW(IDC_WIN32DARKMODE);
+	wc.lpszClassName = L"PuzzleChatGame";
+	wc.hIconSm = LoadIconW(wc.hInstance, MAKEINTRESOURCEW(IDI_WIN32DARKMODE));
+
+	RegisterClassExW(&wc);
+
+	g_hInst = hInstance; // Store instance handle in our global variable
+
+	HWND hWnd = CreateWindowW(
+		L"PuzzleChatGame",
+		L"PuzzleChatGame", 
+		WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		WINDOW_W,
+		WINDOW_H,
+		nullptr, 
+		nullptr, 
+		hInstance, 
+		nullptr);
+
+	if (!hWnd)
+		return FALSE;
+
+	ShowWindow(hWnd, nCmdShow);
+	UpdateWindow(hWnd);
+
+	MSG msg;
+
+	// Main message loop:
+	while (GetMessageW(&msg, nullptr, 0, 0))
+	{
+		TranslateMessage(&msg);
+		DispatchMessageW(&msg);
+	}
+
+	return (int)msg.wParam;
+}
 LRESULT CALLBACK OnPaint(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 {
-	HDC hdc;
-	PAINTSTRUCT ps;
-
-	hdc = BeginPaint(hWnd, &ps);
-
-	// æç”»é ˜åŸŸã®åˆæœŸåŒ–
-	MoveToEx(hdc, d.left, d.top, NULL);
-	LineTo(hdc, d.right, d.top);    // ä¸Šæ¨ªç·š
-	LineTo(hdc, d.right, d.bottom); // å³ç¸¦ç·š
-	LineTo(hdc, d.left, d.bottom);  // ä¸‹æ¨ªç·š
-	LineTo(hdc, d.left, d.top); // å·¦ç¸¦ç·š
+	HDC hdc;							//ƒfƒoƒCƒXƒRƒ“ƒeƒLƒXƒg
+	PAINTSTRUCT ps;						//ƒyƒCƒ“ƒgƒXƒgƒ‰ƒNƒg
 	
-	for (int i = 0; i < n; i++) {    // ç·šã‚’æç”»
+
+
+	hdc = BeginPaint(hWnd, &ps);		//•`‰æ‚ÌŠJn
+										// •`‰æ—Ìˆæ‚Ì‰Šú‰»
+	SetDCBrushColor(hdc, RGB(255, 255, 241));
+	SelectObject(hdc, GetStockObject(DC_BRUSH));
+	Rectangle(hdc, 10, 200, 450, 700);
+	MoveToEx(hdc, d.left, d.top, NULL);
+	LineTo(hdc, d.right, d.top);		// ã‰¡ü
+	LineTo(hdc, d.right, d.bottom);		// ‰Ecü
+	LineTo(hdc, d.left, d.bottom);		// ‰º‰¡ü
+	LineTo(hdc, d.left, d.top);			// ¶cü
+
+
+	for (int i = 0; i < n; i++) {		// ü‚ğ•`‰æ
 		SelectObject(hdc, colors[i]);
-		if (flag[i] == 0) {      // é–‹å§‹ç‚¹ãªã‚‰ã€å§‹ç‚¹ã‚’ç§»å‹•
+		if (flag[i] == 0) {				// ŠJn“_‚È‚çAn“_‚ğˆÚ“®
 			MoveToEx(hdc, pos[i].x, pos[i].y, NULL);
+
 		}
-		else {             // é€”ä¸­ã®ç‚¹ãªã‚‰ç·šã‚’å¼•ã
+		else {							// “r’†‚Ì“_‚È‚çü‚ğˆø‚­
 			LineTo(hdc, pos[i].x, pos[i].y);
+
 		}
 	}
 
-	EndPaint(hWnd, &ps);
+	EndPaint(hWnd, &ps);				//•`‰æI—¹
 
 	return 0L;
+
 }
 
-LRESULT CALLBACK ClearPaint(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
+LRESULT CALLBACK ClearPaint(HWND hWnd)
 {
-	HDC hdc;
-	PAINTSTRUCT ps;
+	HDC hdc;						//ƒfƒoƒCƒXƒRƒ“ƒeƒLƒXƒg
+	PAINTSTRUCT ps;					//ƒyƒCƒ“ƒgƒXƒgƒ‰ƒNƒg
 
-	hdc = BeginPaint(hWnd, &ps);
-
-	// æç”»é ˜åŸŸã®åˆæœŸåŒ–
+	hdc = BeginPaint(hWnd, &ps);	//•`‰æŠJn
+	// •`‰æ—Ìˆæ‚Ì‰Šú‰»
 	MoveToEx(hdc, d.left, d.top, NULL);
-	LineTo(hdc, d.right, d.top);    // ä¸Šæ¨ªç·š
-	LineTo(hdc, d.right, d.bottom); // å³ç¸¦ç·š
-	LineTo(hdc, d.left, d.bottom);  // ä¸‹æ¨ªç·š
-	LineTo(hdc, d.left, d.top); // å·¦ç¸¦ç·š
+	LineTo(hdc, d.right, d.top);    // ã‰¡ü
+	LineTo(hdc, d.right, d.bottom); // ‰Ecü
+	LineTo(hdc, d.left, d.bottom);  // ‰º‰¡ü
+	LineTo(hdc, d.left, d.top);		// ¶cü
 
-	for (int i = 0; i < n; i++) {    // ç·šã‚’æç”»
+
+
+	for (int i = 0; i < n; i++) {   // ‘S‚Ä‚Ìî•ñ‚ğƒŠƒZƒbƒg‚·‚é
 		flag[i] = 0;
 		pos[i].x = 0;
 		pos[i].y = 0;
 		colors[i] = NULL;
+
 	}
-	
-	n = 0;
 
-	EndPaint(hWnd, &ps);
-
+	n = 0;							//ƒJƒEƒ“ƒ^‚ğƒŠƒZƒbƒg‚·‚é
+	EndPaint(hWnd, &ps);			//•`‰æI—¹
 	return 0L;
+
 }
 
-//  æç”»æƒ…å ±ã‚’æ ¼ç´
-void setData(int f, int x, int y,HPEN color)
+//  •`‰æî•ñ‚ğŠi”[
+void setData(int f, int x, int y, HPEN color)
 {
 	flag[n] = f;
 	pos[n].x = x;
 	pos[n].y = y;
 	colors[n] = color;
+
 }
 
-//  ãƒã‚¦ã‚¹ã®ä½ç½®ãŒã‚­ãƒ£ãƒ³ãƒ‘ã‚¹ã®ä¸­ã‹ã©ã†ã‹åˆ¤å®šã™ã‚‹
+//  ƒ}ƒEƒX‚ÌˆÊ’u‚ªƒLƒƒƒ“ƒpƒX‚Ì’†‚©‚Ç‚¤‚©”»’è‚·‚é
 BOOL checkMousePos(int x, int y)
 {
 	if (x >= d.left && x <= d.right
 		&& y >= d.top && y <= d.bottom) {
 		return TRUE;
+
 	}
 	return FALSE;
+
 }
 
-// ãƒ‡ãƒ¼ã‚¿ã‚’é€ä¿¡ã™ã‚‹
+// ƒf[ƒ^‚ğ‘—M‚·‚é
 void FXY(int f3, int x3, int y3) {
-	char buf[9];                  // é€ä¿¡å†…å®¹ã‚’ä¸€æ™‚çš„ã«æ ¼ç´ã™ã‚‹ãƒãƒƒãƒ•ã‚¡
-
+	char buf[9];                  // ‘—M“à—e‚ğˆê“I‚ÉŠi”[‚·‚éƒoƒbƒtƒ@
 	sprintf_s(buf, "%1d%03d%03d", f3, x3, y3);
 	send(sock, buf, strlen(buf) + 1, 0);
+
 }
 
+//‚P`‚R‚Ì’l‚ğƒ‰ƒ“ƒ_ƒ€‚É•Ô‚·
 int randAtoC() {
-	int A2C[] = {0,1,2};
-	return A2C[rand()%3];
+	int A2C[] = { 0,1,2 };
+	return A2C[rand() % 3];
+
 }
 
-void rand0toi(int ary[],int size) {
-	for (int i = 0; i < size;i++) {
+//ˆø”‚Æ‚µ‚ÄsizeŒÂ‚Ì”z—ñ‚ğƒ‰ƒ“ƒ_ƒ€‚ÈŒ`‚É‚·‚é
+void rand0toi(int ary[], int size)
+{
+	for (int i = 0; i < size; i++) {
 		int j = rand() % size;
 		int t = ary[i];
 		ary[i] = ary[j];
 		ary[j] = t;
+
 	}
+
 }
 
+//1`6‚Ì’l‚ğƒ‰ƒ“ƒ_ƒ€‚É•Ô‚·
 int dice() {
-	int DICE[] = {0,1,2,3,4,5};
+	int DICE[] = { 0,1,2,3,4,5 };
 	return DICE[rand() % 6];
+
 }
 
-//ãƒãƒ£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹ã®å†…å®¹ã‚’æ¶ˆå»
-void ChatReset(HWND chatbox){
+//ƒ`ƒƒƒbƒgƒ{ƒbƒNƒX‚Ì“à—e‚ğÁ‹
+void ChatReset(HWND chatbox) {
 	SetWindowText(chatbox, TEXT(""));
 	SetFocus(chatbox);
+
 }
 
-void set_score(int x,int y) {
+//“_”‚ğŠeƒvƒŒƒCƒ„[‚É—^‚¦‚é
+void set_score(int x, int y) {
+
 	char buf[100];
 
-	score_PL1 += x;                    //è¦ªã®ç‚¹æ•°aã‚’PL1ã«ä»˜ä¸
-	score_PL2 += y;                    //å­ã®ç‚¹æ•°bã‚’PL2ã«ä»˜ä¸
-	sprintf_s(buf, "%d", score_PL1);     //PL1ã®ç‚¹æ•°ã‚’ãƒãƒƒãƒ•ã‚¡ã«ä¿å­˜
-	SetWindowText(hWndScore_pl1, buf);  //PL1ã®ç‚¹æ•°ã‚’è¡¨ç¤º
-	sprintf_s(buf, "%d", score_PL2);   //PL2ã®ç‚¹æ•°ã‚’ãƒãƒƒãƒ•ã‚¡ã«ä¿å­˜
-	SetWindowText(hWndScore_pl2, buf); //PL2ã®ç‚¹æ•°ã‚’è¡¨ç¤º
+	score_PL1 += x;						//e‚Ì“_”a‚ğPL1‚É•t—^
+	score_PL2 += y;						//q‚Ì“_”b‚ğPL2‚É•t—^
+	sprintf_s(buf, "%d", score_PL1);    //PL1‚Ì“_”‚ğƒoƒbƒtƒ@‚É•Û‘¶
+	SetWindowText(hWndScore_pl1, buf);  //PL1‚Ì“_”‚ğ•\¦
+	sprintf_s(buf, "%d", score_PL2);	//PL2‚Ì“_”‚ğƒoƒbƒtƒ@‚É•Û‘¶
+	SetWindowText(hWndScore_pl2, buf);	//PL2‚Ì“_”‚ğ•\¦
+
 }
 
+//ƒQ[ƒ€ŠJn‚ÉÀs
 void game_start(HWND hWnd) {
 
-	turn = 0;
-
-	rand0toi(card, 10);					//ã‚«ãƒ¼ãƒ‰é †ç•ªã‚’è¨­å®šã™ã‚‹
-
-	change(hWnd,0,0);
+	turn = 0;				//è”Ô‚ğ0‚É‚·‚é
+	rand0toi(card, 10);		//ƒJ[ƒh‡”Ô‚ğİ’è‚·‚é
+	change(hWnd, 0, 0);		//Œİ‚¢‚É0“_‚Æ‚µ‚Äè”ÔŒğ‘ã‚Ìè‡‚ğÀs‚·‚é
 
 }
 
-//æ‰‹ç•ªäº¤ä»£
+
+
+//è”ÔŒğ‘ã
+
 int change(HWND hWnd, int a, int b) {
 
 	char buf[100];
 
-	ChatReset(hWndSendMSG);
-	ChatReset(hWndRecvMSG);
-	ChatReset(hWndQuestion);
+	ChatReset(hWndSendMSG);			//‘—Mƒ`ƒƒƒbƒgƒ{ƒbƒNƒX‚ğƒŠƒZƒbƒg‚·‚é
+	ChatReset(hWndRecvMSG);			//óMƒ`ƒƒƒbƒgƒ{ƒbƒNƒX‚ğƒŠƒZƒbƒg‚·‚é
+	ChatReset(hWndQuestion);		//‚¨‘è‚ğƒŠƒZƒbƒg‚·‚é
+	ChatReset(hWndHelp);                    //ƒwƒ‹ƒvƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚ğƒŠƒZƒbƒg‚·‚é
+	ClearPaint(hWnd);				//•`‰æƒ{ƒbƒNƒX‚ğƒNƒŠƒA‚·‚é
+	InvalidateRect(hWnd, &d, TRUE);	//”\“®“I‚ÉÄ•`‰æ‚·‚é
 
-	if (FlagPlayer % 2 == 1) {              //è‡ªåˆ†ãŒè¦ªã®å ´åˆ
-		if (Use_PL == 1) {
-			set_score(b, a);
+	if (FlagPlayer % 2 == 1) {      //©•ª‚ªe‚Ìê‡
+		if (Use_PL == 1) {			//‚à‚µPL1‚È‚ç‚Î	
+			set_score(b, a);		//b‚ğPL1‚ÌAa‚ğPL2‚Ì“¾“_‚É‰Á‚¦‚é
+
 		}
-		else if (Use_PL == 0) {
-			set_score(a, b);
+		else if (Use_PL == 0) {	//‚à‚µPL2‚È‚ç‚Î
+			set_score(a, b);		//a‚ğPL1‚ÌAb‚ğPL2‚Ì“¾“_‚É‰Á‚¦‚é
+
 		}
-		if (turn == 3) {
-			score_judge(hWnd);
+		if (turn == 3) {			//‚±‚ê‚ªw’èƒ^[ƒ“”‚ğŒ}‚¦‚½‚È‚ç‚Î
+			score_judge(hWnd);		//Ÿ—˜”»’è‚ğs‚¢I—¹‚·‚é
 			return 0;
+
 		}
 
-		rule_num = randAtoC();
-		dice_num = dice();
+		rule_num = randAtoC();		//ƒ‹[ƒ‹”Ô†‚ğŒˆ‚ß‚é
+		dice_num = dice();			//‚P`‚U‚Ì”š‚ğŒˆ‚ß‚é
 
-		enable_master();
-		
+		enable_master();			//e‚Ì‰Šúó‘Ô‚É‚·‚é
+									//hRULEh‚Æƒ‹[ƒ‹”Ô†buf‚ÉŠi”[‚·‚é
 		sprintf_s(buf, "%s%d", "RULE", rule_num);
+		//buf‚ğ‘—M‚·‚é
 		send(sock, buf, strlen(buf) + 1, 0);
+		//‚»‚ÌŒãAƒ‹[ƒ‹”Ô†‚É‘Î‰‚µ‚½ƒ‹[ƒ‹A
+		//ƒ_ƒCƒX‚É‘Î‰‚µ‚½ƒJ[ƒh‚É‘‚©‚ê‚½‚¨‘è‚ğ•\¦‚·‚é
 		SetWindowText(hWndRule, rule[rule_num]);
 		SetWindowText(hWndQuestion, card_text[card[turn]][dice_num]);
-		if (rule_num == 0) {
-			EnableWindow(hWndSendMSG, TRUE);
-			EnableWindow(hWndSend, TRUE);
-			EnableWindow(hWndClear, TRUE);	// [ã‚¯ãƒªã‚¢]
-			DrawableFlag = 1;
+
+		if (rule_num == 0) {				//ƒ‹[ƒ‹‚P‚È‚ç‚Î•¶š‚ÆŠG‚ªg‚¦‚é‚½‚ß
+			EnableWindow(hWndSendMSG, TRUE);//‘—M—pƒ`ƒƒƒbƒgƒ{ƒbƒNƒXA
+			EnableWindow(hWndSend, TRUE);	//[‘—M]ƒ{ƒ^ƒ“A
+			EnableWindow(hWndClear, TRUE);	//[ƒNƒŠƒA]ƒ{ƒ^ƒ“‚ğ—LŒø‚É‚·‚é
+			DrawableFlag = 1;				//•`‰æ‰Â”\ƒtƒ‰ƒO‚ğ‚P‚É‚·‚é
+			SetWindowText(hWndHelp, "ŠG‚Æ•¶š‚Å‚¨‘è‚ğ•\Œ»‚µ‚Ä‚­‚¾‚³‚¢B\r\nŠG‚ğÁ‚µ‚½‚¢ê‡‚ÍƒNƒŠƒA‚ğ‰Ÿ‚µ‚Ä‚­‚¾‚³‚¢B");
+
 		}
 		else if (rule_num == 1) {
-			EnableWindow(hWndSendMSG, TRUE);
-			EnableWindow(hWndSend, TRUE);
+			EnableWindow(hWndSendMSG, TRUE);//‘—M—pƒ`ƒƒƒbƒgƒ{ƒbƒNƒXA
+			EnableWindow(hWndSend, TRUE);	//[‘—M]ƒ{ƒ^ƒ“‚ğ—LŒø‚É‚·‚é
+			SetWindowText(hWndHelp, "•¶š‚Å‚¨‘è‚ğ•\Œ»‚µ‚Ä‚­‚¾‚³‚¢B");
 
 		}
 		else if (rule_num == 2) {
-			EnableWindow(hWndClear, TRUE);	// [ã‚¯ãƒªã‚¢]
-			DrawableFlag = 1;
+			EnableWindow(hWndClear, TRUE);	// [ƒNƒŠƒA]ƒ{ƒ^ƒ“‚ğ—LŒø‚É‚µA
+			DrawableFlag = 1;				//•`‰æ‰Â”\ƒtƒ‰ƒO‚ğ‚P‚É‚·‚é
+			SetWindowText(hWndHelp, "ŠG‚Å‚¨‘è‚ğ•\Œ»‚µ‚Ä‚­‚¾‚³‚¢B\r\nŠG‚ğÁ‚µ‚½‚¢ê‡‚ÍƒNƒŠƒA‚ğ‰Ÿ‚µ‚Ä‚­‚¾‚³‚¢B");
 		}
 
 	}
-	else if (FlagPlayer % 2 == 0) {
-		
-		if (Use_PL == 1) {
-			set_score(a, b);
+	else if (FlagPlayer % 2 == 0) {//q‚È‚ç‚Î
+
+		if (Use_PL == 1) {			//‚à‚µPL1‚È‚ç‚Î
+			set_score(a, b);		//a‚ğPL1‚ÌAb‚ğPL2‚Ì“¾“_‚É‰Á‚¦‚é
+
 		}
-		else if (Use_PL == 0) {
-			set_score(b, a);
+		else if (Use_PL == 0) {	//‚à‚µPL2‚È‚ç‚Î
+			set_score(b, a);		//b‚ğPL1‚ÌAa‚ğPL2‚Ì“¾“_‚É‰Á‚¦‚é
+
 		}
-		if (turn == 3) {
-			score_judge(hWnd);
+
+		if (turn == 3) {			//‚±‚ê‚ªw’èƒ^[ƒ“”‚ğŒ}‚¦‚½‚È‚ç‚Î
+			score_judge(hWnd);		//Ÿ—˜”»’è‚ğs‚¢I—¹‚·‚é
 			return 0;
+
 		}
-		enable_player();
-		
+
+		enable_player();			//q‚Ì‰Šúó‘Ô‚É‚·‚é
+		SetWindowText(hWndHelp, "‘Šè‚ª‰½‚ğ•\Œ»‚µ‚Ä‚¢‚é‚©“š‚¦‚Ä‚­‚¾‚³‚¢B\r\n‚í‚©‚ç‚È‚¢ê‡‚ÍƒMƒuƒAƒbƒv‚ğ‰Ÿ‚µ‚Ä‚­‚¾‚³‚¢B");
+
 	}
 
-	FlagPlayer++;
-	turn++;
+	FlagPlayer++;		//ˆ—‚ªI‚í‚Á‚½‚È‚ç‚ÎŸ‚ÌeAq‚ğŒˆ‚ß‚é
+	turn++;				//‚»‚µ‚Äè”Ô‚ğ‘‚â‚µI—¹‚·‚é
 	return 0;
+
 }
 
-int score_judge(HWND hWnd){
-	if (Use_PL == 1) {
-		if (score_PL1 > score_PL2) {
-			MessageBox(hWnd, "YOU WIN!!\nè¦ªã®å‹ã¡ã§ã™ï¼",
+//Ÿ—˜”»’è‚ğs‚¤
+int score_judge(HWND hWnd) {
+
+	if (Use_PL == 1) {						//©•ª‚ªPL1‚È‚ç‚Î
+
+		if (score_PL1 > score_PL2) {		//PL1‚Ì“_”‚ª‘½‚¯‚ê‚ÎŸ‚¿
+			MessageBox(hWnd, "YOU WIN!!\ne‚ÌŸ‚¿‚Å‚·I",
 				"Information", MB_OK | MB_ICONINFORMATION);
+
 		}
-		else if (score_PL1 < score_PL2) {
-			MessageBox(hWnd, "YOU LOSE!!\nå­ã®å‹ã¡ã§ã™ï¼",
+		else if (score_PL1 < score_PL2) {	//PL1‚Ì“_”‚ª’á‚¯‚ê‚Î•‰‚¯
+			MessageBox(hWnd, "YOU LOSE!!\nq‚ÌŸ‚¿‚Å‚·I",
 				"Information", MB_OK | MB_ICONINFORMATION);
+
 		}
-		else if (score_PL1 == score_PL2) {
-			MessageBox(hWnd, "å¼•ãåˆ†ã‘ã§ã™ï¼",
+		else if (score_PL1 == score_PL2) {	//PL1‚Ì“_”‚ªPL2‚Æ“¯‚¶‚È‚ç‚Îˆø‚«•ª‚¯
+										   //‚Æ‚¢‚¤|‚ğƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚É•\¦
+			MessageBox(hWnd, "ˆø‚«•ª‚¯‚Å‚·I",
 				"Information", MB_OK | MB_ICONINFORMATION);
 		}
 
 	}
-	else if (Use_PL == 0) {
-		if (score_PL1 > score_PL2) {
-			MessageBox(hWnd, "YOU LOSE!!\nè¦ªã®å‹ã¡ã§ã™ï¼",
+
+	else if (Use_PL == 0) {					//©•ª‚ªPL2‚È‚ç‚Î
+
+		if (score_PL1 > score_PL2) {		//PL2‚Ì“_”‚ª’á‚¯‚ê‚Î•‰‚¯
+			MessageBox(hWnd, "YOU LOSE!!\ne‚ÌŸ‚¿‚Å‚·I",
 				"Information", MB_OK | MB_ICONINFORMATION);
+
 		}
-		else if (score_PL1 < score_PL2) {
-			MessageBox(hWnd, "YOU WIN!!\nå­ã®å‹ã¡ã§ã™ï¼",
+		else if (score_PL1 < score_PL2) {	//PL2‚Ì“_”‚ª‘½‚¯‚ê‚ÎŸ‚¿
+			MessageBox(hWnd, "YOU WIN!!\nq‚ÌŸ‚¿‚Å‚·I",
 				"Information", MB_OK | MB_ICONINFORMATION);
+
 		}
-		else if (score_PL1 == score_PL2) {
-			MessageBox(hWnd, "å¼•ãåˆ†ã‘ã§ã™ï¼",
+		else if (score_PL1 == score_PL2) {	//PL1‚Ì“_”‚ªPL2‚Æ“¯‚¶‚È‚ç‚Îˆø‚«•ª‚¯
+										   //‚Æ‚¢‚¤|‚ğƒƒbƒZ[ƒWƒ{ƒbƒNƒX‚É•\¦
+			MessageBox(hWnd, "ˆø‚«•ª‚¯‚Å‚·I",
 				"Information", MB_OK | MB_ICONINFORMATION);
+
 		}
 
 	}
-	FlagPlayer = 0;
-	turn = 0;
-	enable_end();
+
+	FlagPlayer = 0;		//e‚Æq‚ğ‚Ç‚¿‚ç‚à0‚Æ‚µ
+	turn = 0;			//è”Ô‚àƒŠƒZƒbƒg
+	enable_end();		//I—¹ó‘Ô‚Æ‚È‚Á‚ÄI‚í‚é
 	return 0;
+
 }
 
-
-//  ã‚½ã‚±ãƒƒãƒˆåˆæœŸåŒ–å‡¦ç†
+//  ƒ\ƒPƒbƒg‰Šú‰»ˆ—
 BOOL SockInit(HWND hWnd)
 {
-	WSADATA wsa;
-	int ret;
-	char ret_buf[80];
+	WSADATA wsa;		//WSAStartup‚ª‰Šú‰»‚µ‚½ó‘Ô‚ğŠi”[‚·‚é
+	int ret;			//WSAStartup‚Ì•Ô‚è’l‚ğŠi”[‚·‚é
+	char ret_buf[80];	//ret‚ÌƒGƒ‰[“à—e‚ğŠi”[‚µA•¶š—ñ‰»‚·‚é
 
+						//ret‚ğ‰Šú‰»‚·‚é
 	ret = WSAStartup(MAKEWORD(1, 1), &wsa);
 
-	if (ret != 0) {
+	if (ret != 0) {		//‚à‚µret‚ª0o‚È‚¯‚ê‚Î
+						//ƒGƒ‰[“à—e‚ğ•\¦‚µAƒvƒƒOƒ‰ƒ€‚ğI—¹‚·‚é
 		wsprintf(ret_buf, "%d is the err", ret);
 		MessageBox(hWnd, ret_buf, "Error", MB_OK | MB_ICONSTOP);
 		exit(-1);
 	}
-	return FALSE;
+	return FALSE;		//³í‚És‚í‚ê‚½ê‡FALSE‚ğ•Ô‚·
 }
 
-//  ã‚½ã‚±ãƒƒãƒˆæ¥ç¶š (ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆå´)
+//  ƒ\ƒPƒbƒgÚ‘± (ƒNƒ‰ƒCƒAƒ“ƒg‘¤)
 BOOL SockConnect(HWND hWnd, LPCSTR host)
 {
-	SOCKADDR_IN cl_sin; // SOCKADDR_INæ§‹é€ ä½“
+	SOCKADDR_IN cl_sin;				// SOCKADDR_IN\‘¢‘Ì
 
-	// ã‚½ã‚±ãƒƒãƒˆã‚’é–‹ã
+									// ƒ\ƒPƒbƒg‚ğŠJ‚­
 	sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (sock == INVALID_SOCKET) {        // ã‚½ã‚±ãƒƒãƒˆä½œæˆå¤±æ•—
+
+	if (sock == INVALID_SOCKET) {   // ƒ\ƒPƒbƒgì¬¸”s‚µ‚½ê‡
+									//ƒGƒ‰[“à—e‚ğ•\¦‚µATRUE‚ğ•Ô‚·
 		MessageBox(hWnd, "Socket() failed", "Error", MB_OK | MB_ICONEXCLAMATION);
 		return TRUE;
 	}
 
-	memset(&cl_sin, 0x00, sizeof(cl_sin)); // æ§‹é€ ä½“åˆæœŸåŒ–
-	cl_sin.sin_family = AF_INET;           // ã‚¤ãƒ³ã‚¿ãƒ¼ãƒãƒƒãƒˆ
-	cl_sin.sin_port = htons(PORT);       // ãƒãƒ¼ãƒˆç•ªå·æŒ‡å®š
+	memset(&cl_sin, 0x00, sizeof(cl_sin));	// \‘¢‘Ì‰Šú‰»
+	cl_sin.sin_family = AF_INET;			// ƒCƒ“ƒ^[ƒlƒbƒg
+	cl_sin.sin_port = htons(PORT);			// ƒ|[ƒg”Ô†w’è
 
-	phe = gethostbyname(host); // ã‚¢ãƒ‰ãƒ¬ã‚¹å–å¾—
+	phe = gethostbyname(host);				// ƒAƒhƒŒƒXæ“¾
 
-	if (phe == NULL) {
+	if (phe == NULL) {						//phe‚ªNULL‚È‚ç‚ÎƒGƒ‰[“à—e‚ğ•\¦‚µATRUE‚ğ•Ô‚·
 		MessageBox(hWnd, "gethostbyname() failed.",
 			"Error", MB_OK | MB_ICONEXCLAMATION);
 		return TRUE;
+
 	}
+	//cl_sin‚Ìsin_addr‚Éphe‚Ìh_addr‚ğh_length•ªŠi”[‚·‚é
 	memcpy(&cl_sin.sin_addr, phe->h_addr, phe->h_length);
 
-	// éåŒæœŸãƒ¢ãƒ¼ãƒ‰ (æ¥ç¶š)
+	// ”ñ“¯Šúƒ‚[ƒh (Ú‘±)
+											//WSAAsyncSelect‚Ì•Ô‚è’l‚ªSOCKET_ERROR‚È‚ç‚Î
 	if (WSAAsyncSelect(sock, hWnd, WM_SOCKET, FD_CONNECT) == SOCKET_ERROR) {
-		closesocket(sock);
-		sock = INVALID_SOCKET;
+		closesocket(sock);					//ƒ\ƒPƒbƒg‚ğ•Â‚¶
+		sock = INVALID_SOCKET;				//ƒ\ƒPƒbƒg‚ğINVALID_SOCKET‚Æ‚µ
+											//ƒGƒ‰[“à—e‚ğ•\¦‚µATRUE‚ğ•Ô‚·
 		MessageBox(hWnd, "WSAAsyncSelect() failed",
 			"Error", MB_OK | MB_ICONEXCLAMATION);
 		return TRUE;
+
 	}
 
-	// æ¥ç¶šå‡¦ç†
+	// Ú‘±ˆ—
+											//connect‚ğÀs‚µA•Ô‚è’l‚ªSOCKET_ERROR‚Å‚ ‚è
 	if (connect(sock, (LPSOCKADDR)&cl_sin, sizeof(cl_sin)) == SOCKET_ERROR) {
+		//WSAGetLastError‚ªWSAEWOULDLOCK‚Å‚È‚¯‚ê‚Î
 		if (WSAGetLastError() != WSAEWOULDBLOCK) {
-			closesocket(sock);
-			sock = INVALID_SOCKET;
+			closesocket(sock);				//ƒ\ƒPƒbƒg‚ğ•Â‚¶
+			sock = INVALID_SOCKET;			//ƒ\ƒPƒbƒg‚ğINVALID_SOCKET‚Æ‚µ
+											//ƒGƒ‰[“à—e‚ğ•\¦‚µATRUE‚ğ•Ô‚·
 			MessageBox(hWnd, "connect() failed", "Error", MB_OK | MB_ICONEXCLAMATION);
 			return TRUE;
+
 		}
 
 	}
-	return FALSE;
+
+	return FALSE;		//‘S‚Ä‚ÌƒGƒ‰[ˆ—‚ğ’Ê‰ß‚µ‚½‚È‚ç‚ÎFALSE‚ğ•Ô‚·
+
 }
 
-//  æ¥ç¶šå¾…ã¡ (ã‚µãƒ¼ãƒå´)
+//  Ú‘±‘Ò‚¿ (ƒT[ƒo‘¤)
 BOOL SockAccept(HWND hWnd)
 {
-	SOCKADDR_IN sv_sin;         // SOCKADDR_INæ§‹é€ ä½“
+	SOCKADDR_IN sv_sin;						// SOCKADDR_IN\‘¢‘Ì
 
-	// ã‚µãƒ¼ãƒç”¨ã‚½ã‚±ãƒƒãƒˆ
+	// ƒT[ƒo—pƒ\ƒPƒbƒg
 	sv_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (sv_sock == INVALID_SOCKET) { // ã‚½ã‚±ãƒƒãƒˆä½œæˆå¤±æ•—
+
+	if (sv_sock == INVALID_SOCKET) {		// ƒ\ƒPƒbƒgì¬¸”s‚µ‚½ê‡
+											//ƒGƒ‰[“à—e‚ğ•\¦‚µATRUE‚ğ•Ô‚·
 		MessageBox(hWnd, "Socket() failed", "Error", MB_OK | MB_ICONEXCLAMATION);
 		return TRUE;
+
 	}
 
-	memset(&sv_sin, 0x00, sizeof(sv_sin));      // æ§‹é€ ä½“åˆæœŸåŒ–
-	sv_sin.sin_family = AF_INET;           // ã‚¤ãƒ³ã‚¿ãƒ¼ãƒãƒƒãƒˆ
-	sv_sin.sin_port = htons(PORT);       // ãƒãƒ¼ãƒˆç•ªå·æŒ‡å®š
-	sv_sin.sin_addr.s_addr = htonl(INADDR_ANY); // ã‚¢ãƒ‰ãƒ¬ã‚¹æŒ‡å®š
+	memset(&sv_sin, 0x00, sizeof(sv_sin));      // \‘¢‘Ì‰Šú‰»
+	sv_sin.sin_family = AF_INET;				// ƒCƒ“ƒ^[ƒlƒbƒg
+	sv_sin.sin_port = htons(PORT);				// ƒ|[ƒg”Ô†w’è
+	sv_sin.sin_addr.s_addr = htonl(INADDR_ANY); // ƒAƒhƒŒƒXw’è
 
+												//bind‚Ì•Ô‚è’l‚ªSOCKET_ERROR‚È‚ç‚Î
 	if (bind(sv_sock, (LPSOCKADDR)&sv_sin, sizeof(sv_sin)) == SOCKET_ERROR) {
-		closesocket(sv_sock);
-		sv_sock = INVALID_SOCKET;
+		closesocket(sv_sock);					//ƒ\ƒPƒbƒg‚ğ•Â‚¶
+		sv_sock = INVALID_SOCKET;				//ƒ\ƒPƒbƒg‚ğINVALID_SOCKET‚Æ‚µ
+												//ƒGƒ‰[“à—e‚ğ•\¦‚µATRUE‚ğ•Ô‚·
 		MessageBox(hWnd, "bind() failed", "Error", MB_OK | MB_ICONEXCLAMATION);
 		return TRUE;
+
 	}
 
-	if (listen(sv_sock, 5) == SOCKET_ERROR) {
-		// æ¥ç¶šå¾…ã¡å¤±æ•—
-		closesocket(sv_sock);
-		sv_sock = INVALID_SOCKET;
+	if (listen(sv_sock, 5) == SOCKET_ERROR) {	//‚à‚µlisten‚Ì•Ô‚è’l‚ªSOCKET_ERROR‚È‚ç‚Î
+												// Ú‘±‘Ò‚¿¸”s‚Æ‚µ‚ÄA
+		closesocket(sv_sock);					//ƒ\ƒPƒbƒg‚ğ•Â‚¶
+		sv_sock = INVALID_SOCKET;				//ƒ\ƒPƒbƒg‚ğINVALID_SOCKET‚Æ‚µ
+												//ƒGƒ‰[“à—e‚ğ•\¦‚µATRUE‚ğ•Ô‚·
 		MessageBox(hWnd, "listen() failed", "Error", MB_OK | MB_ICONEXCLAMATION);
 		return TRUE;
+
 	}
 
-	// éåŒæœŸå‡¦ç†ãƒ¢ãƒ¼ãƒ‰ (æ¥ç¶šå¾…ã¡)
+	// ”ñ“¯Šúˆ—ƒ‚[ƒh (Ú‘±‘Ò‚¿)
+												//WSAAsyncSelect‚Ì•Ô‚è’l‚ªSOCKET_ERROR‚È‚ç‚Î
 	if (WSAAsyncSelect(sv_sock, hWnd, WM_SOCKET, FD_ACCEPT) == SOCKET_ERROR) {
-		closesocket(sv_sock);
-		sv_sock = INVALID_SOCKET;
+		closesocket(sv_sock);					//ƒ\ƒPƒbƒg‚ğ•Â‚¶
+		sv_sock = INVALID_SOCKET;				//ƒ\ƒPƒbƒg‚ğINVALID_SOCKET‚Æ‚µ
+												//ƒGƒ‰[“à—e‚ğ•\¦‚µATRUE‚ğ•Ô‚·
 		MessageBox(hWnd, "WSAAsyncSelect() failed",
 			"Error", MB_OK | MB_ICONEXCLAMATION);
 		return TRUE;
+
 	}
-	return FALSE;
+
+	return FALSE;		//‘S‚Ä‚ÌƒGƒ‰[ˆ—‚ğ’Ê‰ß‚µ‚½‚È‚ç‚ÎFALSE‚ğ•Ô‚·
+
 }
+
 
 void enable_wait() {
 	EnableWindow(hWndHost, FALSE);	// [HostName]
-	EnableWindow(hWndConnect, FALSE);	// [æ¥ç¶š]    
-	EnableWindow(hWndAccept, FALSE);	// [æ¥ç¶šå¾…ã¡]
-	EnableWindow(hWndReject, TRUE);	// [åˆ‡æ–­]    
-	EnableWindow(hWndRejectOrder, FALSE);	// [åˆ‡æ–­è¦è«‹]
+	EnableWindow(hWndConnect, FALSE);	// [Ú‘±]    
+	EnableWindow(hWndAccept, FALSE);	// [Ú‘±‘Ò‚¿]
+	EnableWindow(hWndReject, TRUE);	    // [Ø’f]    
+	EnableWindow(hWndRejectOrder, FALSE);	// [Ø’f—v¿]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]
-	EnableWindow(hWndCorrect, FALSE);	// [æ­£è§£ãƒœã‚¿ãƒ³]    
-	EnableWindow(hWndIncorrect, FALSE);	// [ä¸æ­£è§£ãƒœã‚¿ãƒ³]
-	EnableWindow(hWndConsent, FALSE);	// [æ‰¿è«¾]    
-	EnableWindow(hWndPointout, FALSE);	// [æŒ‡æ‘˜]    
-	EnableWindow(hWndDenial, FALSE);	// [å¦èª]   
-	EnableWindow(hWndSend, FALSE);	// [é€ä¿¡]  
-	EnableWindow(hWndChange, FALSE);	// [äº¤ä»£]
-	EnableWindow(hWndClear, FALSE);	// [ã‚¯ãƒªã‚¢]
+	EnableWindow(hWndGiveup, FALSE);	// [ƒMƒuƒAƒbƒv]
+	EnableWindow(hWndCorrect, FALSE);	// [³‰ğƒ{ƒ^ƒ“]    
+	EnableWindow(hWndIncorrect, FALSE);	// [•s³‰ğƒ{ƒ^ƒ“]
+	EnableWindow(hWndConsent, FALSE);	// [³‘ø]    
+	EnableWindow(hWndPointout, FALSE);	// [w“E]    
+	EnableWindow(hWndDenial, FALSE);	// [”Û”F]   
+	EnableWindow(hWndSend, FALSE);	// [‘—M]  
+	EnableWindow(hWndChange, FALSE);	// [Œğ‘ã]
+	EnableWindow(hWndClear, FALSE);	// [ƒNƒŠƒA]
 }
 
 void enable_standby() {
-	EnableWindow(hWndHost, TRUE);	// [HostName]
-	EnableWindow(hWndConnect, TRUE);	// [æ¥ç¶š]    
-	EnableWindow(hWndAccept, TRUE);	// [æ¥ç¶šå¾…ã¡]
-	EnableWindow(hWndReject, FALSE);	// [åˆ‡æ–­]    
-	EnableWindow(hWndRejectOrder, FALSE);	// [åˆ‡æ–­è¦è«‹]
+	EnableWindow(hWndHost, TRUE);	    // [HostName]
+	EnableWindow(hWndConnect, TRUE);	    // [Ú‘±]    
+	EnableWindow(hWndAccept, TRUE);	    // [Ú‘±‘Ò‚¿]
+	EnableWindow(hWndReject, FALSE);	// [Ø’f]    
+	EnableWindow(hWndRejectOrder, FALSE);	// [Ø’f—v¿]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]
-	EnableWindow(hWndCorrect, FALSE);	// [æ­£è§£ãƒœã‚¿ãƒ³]    
-	EnableWindow(hWndIncorrect, FALSE);	// [ä¸æ­£è§£ãƒœã‚¿ãƒ³]
-	EnableWindow(hWndConsent, FALSE);	// [æ‰¿è«¾]    
-	EnableWindow(hWndPointout, FALSE);	// [æŒ‡æ‘˜]    
-	EnableWindow(hWndDenial, FALSE);	// [å¦èª]   
-	EnableWindow(hWndSend, FALSE);	// [é€ä¿¡]  
-	EnableWindow(hWndChange, FALSE);	// [äº¤ä»£]
-	EnableWindow(hWndClear, FALSE);	// [ã‚¯ãƒªã‚¢]
+	EnableWindow(hWndGiveup, FALSE);	// [ƒMƒuƒAƒbƒv]
+	EnableWindow(hWndCorrect, FALSE);	// [³‰ğƒ{ƒ^ƒ“]    
+	EnableWindow(hWndIncorrect, FALSE);	// [•s³‰ğƒ{ƒ^ƒ“]
+	EnableWindow(hWndConsent, FALSE);	// [³‘ø]    
+	EnableWindow(hWndPointout, FALSE);	// [w“E]    
+	EnableWindow(hWndDenial, FALSE);	// [”Û”F]   
+	EnableWindow(hWndSend, FALSE);	// [‘—M]  
+	EnableWindow(hWndChange, FALSE);	// [Œğ‘ã]
+	EnableWindow(hWndClear, FALSE);	// [ƒNƒŠƒA]
 }
 
 void enable_master() {
-	EnableWindow(hWndSendMSG, FALSE);	// [é€ä¿¡ç”¨ãƒãƒ£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹]
+	EnableWindow(hWndSendMSG, FALSE);	// [‘—M—pƒ`ƒƒƒbƒgƒ{ƒbƒNƒX]
 	EnableWindow(hWndHost, FALSE);	// [HostName]
-	EnableWindow(hWndConnect, FALSE);	// [æ¥ç¶š]    
-	EnableWindow(hWndAccept, FALSE);	// [æ¥ç¶šå¾…ã¡]
-	EnableWindow(hWndReject, TRUE);	// [åˆ‡æ–­]    
-	EnableWindow(hWndRejectOrder, TRUE);	// [åˆ‡æ–­è¦è«‹]
+	EnableWindow(hWndConnect, FALSE);	// [Ú‘±]    
+	EnableWindow(hWndAccept, FALSE);	// [Ú‘±‘Ò‚¿]
+	EnableWindow(hWndReject, TRUE);	    // [Ø’f]    
+	EnableWindow(hWndRejectOrder, TRUE);	    // [Ø’f—v¿]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]
-	EnableWindow(hWndCorrect, TRUE);	// [æ­£è§£ãƒœã‚¿ãƒ³]    
-	EnableWindow(hWndIncorrect, TRUE);	// [ä¸æ­£è§£ãƒœã‚¿ãƒ³]
-	EnableWindow(hWndConsent, FALSE);	// [æ‰¿è«¾]    
-	EnableWindow(hWndPointout, FALSE);	// [æŒ‡æ‘˜]    
-	EnableWindow(hWndDenial, FALSE);	// [å¦èª]   
-	EnableWindow(hWndSend, FALSE);	// [é€ä¿¡]  
-	EnableWindow(hWndChange, FALSE);	// [äº¤ä»£]
-	EnableWindow(hWndClear, FALSE);	// [ã‚¯ãƒªã‚¢]
+	EnableWindow(hWndGiveup, FALSE);	// [ƒMƒuƒAƒbƒv]
+	EnableWindow(hWndCorrect, TRUE);	    // [³‰ğƒ{ƒ^ƒ“]    
+	EnableWindow(hWndIncorrect, TRUE);	    // [•s³‰ğƒ{ƒ^ƒ“]
+	EnableWindow(hWndConsent, FALSE);	// [³‘ø]    
+	EnableWindow(hWndPointout, FALSE);	// [w“E]    
+	EnableWindow(hWndDenial, FALSE);	// [”Û”F]   
+	EnableWindow(hWndSend, FALSE);	// [‘—M]  
+	EnableWindow(hWndChange, FALSE);	// [Œğ‘ã]
+	EnableWindow(hWndClear, FALSE);	// [ƒNƒŠƒA]
 }
 
 void enable_player() {
-	EnableWindow(hWndSendMSG, TRUE);	// [é€ä¿¡ç”¨ãƒãƒ£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹]
+	EnableWindow(hWndSendMSG, TRUE);	    // [‘—M—pƒ`ƒƒƒbƒgƒ{ƒbƒNƒX]
 	EnableWindow(hWndHost, FALSE);	// [HostName]
-	EnableWindow(hWndConnect, FALSE);	// [æ¥ç¶š]    
-	EnableWindow(hWndAccept, FALSE);	// [æ¥ç¶šå¾…ã¡]
-	EnableWindow(hWndReject, TRUE);	// [åˆ‡æ–­]    
-	EnableWindow(hWndRejectOrder, TRUE);	// [åˆ‡æ–­è¦è«‹]
+	EnableWindow(hWndConnect, FALSE);	// [Ú‘±]    
+	EnableWindow(hWndAccept, FALSE);	// [Ú‘±‘Ò‚¿]
+	EnableWindow(hWndReject, TRUE);	    // [Ø’f]    
+	EnableWindow(hWndRejectOrder, TRUE);	    // [Ø’f—v¿]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, TRUE);	// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]
-	EnableWindow(hWndCorrect, FALSE);	// [æ­£è§£ãƒœã‚¿ãƒ³]    
-	EnableWindow(hWndIncorrect, FALSE);	// [ä¸æ­£è§£ãƒœã‚¿ãƒ³]
-	EnableWindow(hWndConsent, FALSE);	// [æ‰¿è«¾]    
-	EnableWindow(hWndPointout, FALSE);	// [æŒ‡æ‘˜]    
-	EnableWindow(hWndDenial, FALSE);	// [å¦èª]   
-	EnableWindow(hWndSend, TRUE);	// [é€ä¿¡]  
-	EnableWindow(hWndChange, FALSE);	// [äº¤ä»£]
-	EnableWindow(hWndClear, FALSE);	// [ã‚¯ãƒªã‚¢]
+	EnableWindow(hWndGiveup, TRUE);	    // [ƒMƒuƒAƒbƒv]
+	EnableWindow(hWndCorrect, FALSE);	// [³‰ğƒ{ƒ^ƒ“]    
+	EnableWindow(hWndIncorrect, FALSE);	// [•s³‰ğƒ{ƒ^ƒ“]
+	EnableWindow(hWndConsent, FALSE);	// [³‘ø]    
+	EnableWindow(hWndPointout, FALSE);	// [w“E]    
+	EnableWindow(hWndDenial, FALSE);	// [”Û”F]   
+	EnableWindow(hWndSend, TRUE);	    // [‘—M]  
+	EnableWindow(hWndChange, FALSE);	// [Œğ‘ã]
+	EnableWindow(hWndClear, FALSE);	// [ƒNƒŠƒA]
 }
 
 void enable_end() {
-	EnableWindow(hWndSendMSG, FALSE);	// [é€ä¿¡ç”¨ãƒãƒ£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹]
+	EnableWindow(hWndSendMSG, FALSE);	// [‘—M—pƒ`ƒƒƒbƒgƒ{ƒbƒNƒX]
 	EnableWindow(hWndHost, FALSE);	// [HostName]
-	EnableWindow(hWndConnect, FALSE);	// [æ¥ç¶š]    
-	EnableWindow(hWndAccept, FALSE);	// [æ¥ç¶šå¾…ã¡]
-	EnableWindow(hWndReject, TRUE);	// [åˆ‡æ–­]    
-	EnableWindow(hWndRejectOrder, TRUE);	// [åˆ‡æ–­è¦è«‹]
+	EnableWindow(hWndConnect, FALSE);	// [Ú‘±]    
+	EnableWindow(hWndAccept, FALSE);	// [Ú‘±‘Ò‚¿]
+	EnableWindow(hWndReject, TRUE);	    // [Ø’f]    
+	EnableWindow(hWndRejectOrder, TRUE);	    // [Ø’f—v¿]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]
-	EnableWindow(hWndCorrect, FALSE);	// [æ­£è§£ãƒœã‚¿ãƒ³]    
-	EnableWindow(hWndIncorrect, FALSE);	// [ä¸æ­£è§£ãƒœã‚¿ãƒ³]
-	EnableWindow(hWndConsent, FALSE);	// [æ‰¿è«¾]    
-	EnableWindow(hWndPointout, FALSE);	// [æŒ‡æ‘˜]    
-	EnableWindow(hWndDenial, FALSE);	// [å¦èª]   
-	EnableWindow(hWndSend, FALSE);	// [é€ä¿¡]  
-	EnableWindow(hWndChange, FALSE);	// [äº¤ä»£]
-	EnableWindow(hWndClear, FALSE);	// [ã‚¯ãƒªã‚¢]
+	EnableWindow(hWndGiveup, FALSE);	// [ƒMƒuƒAƒbƒv]
+	EnableWindow(hWndCorrect, FALSE);	// [³‰ğƒ{ƒ^ƒ“]    
+	EnableWindow(hWndIncorrect, FALSE);	// [•s³‰ğƒ{ƒ^ƒ“]
+	EnableWindow(hWndConsent, FALSE);	// [³‘ø]    
+	EnableWindow(hWndPointout, FALSE);	// [w“E]    
+	EnableWindow(hWndDenial, FALSE);	// [”Û”F]   
+	EnableWindow(hWndSend, FALSE);	// [‘—M]  
+	EnableWindow(hWndChange, FALSE);	// [Œğ‘ã]
+	EnableWindow(hWndClear, FALSE);	// [ƒNƒŠƒA]
 }
 
 void enable_correct() {
-	EnableWindow(hWndSendMSG, FALSE);	// [é€ä¿¡ç”¨ãƒãƒ£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹]
+	EnableWindow(hWndSendMSG, FALSE);	// [‘—M—pƒ`ƒƒƒbƒgƒ{ƒbƒNƒX]
 	EnableWindow(hWndHost, FALSE);	// [HostName]
-	EnableWindow(hWndConnect, FALSE);	// [æ¥ç¶š]    
-	EnableWindow(hWndAccept, FALSE);	// [æ¥ç¶šå¾…ã¡]
-	EnableWindow(hWndReject, TRUE);	// [åˆ‡æ–­]    
-	EnableWindow(hWndRejectOrder, TRUE);	// [åˆ‡æ–­è¦è«‹]
+	EnableWindow(hWndConnect, FALSE);	// [Ú‘±]    
+	EnableWindow(hWndAccept, FALSE);	// [Ú‘±‘Ò‚¿]
+	EnableWindow(hWndReject, TRUE);	    // [Ø’f]    
+	EnableWindow(hWndRejectOrder, TRUE);	    // [Ø’f—v¿]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]
-	EnableWindow(hWndCorrect, FALSE);	// [æ­£è§£ãƒœã‚¿ãƒ³]    
-	EnableWindow(hWndIncorrect, FALSE);	// [ä¸æ­£è§£ãƒœã‚¿ãƒ³]
-	EnableWindow(hWndConsent, FALSE);	// [æ‰¿è«¾]    
-	EnableWindow(hWndPointout, TRUE);	// [æŒ‡æ‘˜]    
-	EnableWindow(hWndDenial, FALSE);	// [å¦èª]   
-	EnableWindow(hWndSend, FALSE);	// [é€ä¿¡]  
-	EnableWindow(hWndChange, TRUE);	// [äº¤ä»£]
-	EnableWindow(hWndClear, FALSE);	// [ã‚¯ãƒªã‚¢]
+	EnableWindow(hWndGiveup, FALSE);	// [ƒMƒuƒAƒbƒv]
+	EnableWindow(hWndCorrect, FALSE);	// [³‰ğƒ{ƒ^ƒ“]    
+	EnableWindow(hWndIncorrect, FALSE);	// [•s³‰ğƒ{ƒ^ƒ“]
+	EnableWindow(hWndConsent, FALSE);	// [³‘ø]    
+	EnableWindow(hWndPointout, TRUE);	    // [w“E]    
+	EnableWindow(hWndDenial, FALSE);	// [”Û”F]   
+	EnableWindow(hWndSend, FALSE);	// [‘—M]  
+	EnableWindow(hWndChange, TRUE);	    // [Œğ‘ã]
+	EnableWindow(hWndClear, FALSE);	// [ƒNƒŠƒA]
 }
 
 void enable_pause() {
-	EnableWindow(hWndSendMSG, FALSE);	// [é€ä¿¡ç”¨ãƒãƒ£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹]
+	EnableWindow(hWndSendMSG, FALSE);	// [‘—M—pƒ`ƒƒƒbƒgƒ{ƒbƒNƒX]
 	EnableWindow(hWndHost, FALSE);	// [HostName]
-	EnableWindow(hWndConnect, FALSE);	// [æ¥ç¶š]    
-	EnableWindow(hWndAccept, FALSE);	// [æ¥ç¶šå¾…ã¡]
-	EnableWindow(hWndReject, TRUE);	// [åˆ‡æ–­]    
-	EnableWindow(hWndRejectOrder, TRUE);	// [åˆ‡æ–­è¦è«‹]
+	EnableWindow(hWndConnect, FALSE);	// [Ú‘±]    
+	EnableWindow(hWndAccept, FALSE);	// [Ú‘±‘Ò‚¿]
+	EnableWindow(hWndReject, TRUE);	    // [Ø’f]    
+	EnableWindow(hWndRejectOrder, TRUE);     // [Ø’f—v¿]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]
-	EnableWindow(hWndCorrect, FALSE);	// [æ­£è§£ãƒœã‚¿ãƒ³]    
-	EnableWindow(hWndIncorrect, FALSE);	// [ä¸æ­£è§£ãƒœã‚¿ãƒ³]
-	EnableWindow(hWndConsent, FALSE);	// [æ‰¿è«¾]    
-	EnableWindow(hWndPointout, FALSE);	// [æŒ‡æ‘˜]    
-	EnableWindow(hWndDenial, FALSE);	// [å¦èª]   
-	EnableWindow(hWndSend, TRUE);	// [é€ä¿¡]  
-	EnableWindow(hWndChange, FALSE);	// [äº¤ä»£]
-	EnableWindow(hWndClear, FALSE);	// [ã‚¯ãƒªã‚¢]
+	EnableWindow(hWndGiveup, FALSE);	// [ƒMƒuƒAƒbƒv]
+	EnableWindow(hWndCorrect, FALSE);	// [³‰ğƒ{ƒ^ƒ“]    
+	EnableWindow(hWndIncorrect, FALSE);	// [•s³‰ğƒ{ƒ^ƒ“]
+	EnableWindow(hWndConsent, FALSE);	// [³‘ø]    
+	EnableWindow(hWndPointout, FALSE);	// [w“E]    
+	EnableWindow(hWndDenial, FALSE);	// [”Û”F]   
+	EnableWindow(hWndSend, TRUE);	    // [‘—M]  
+	EnableWindow(hWndChange, FALSE);	// [Œğ‘ã]
+	EnableWindow(hWndClear, FALSE);    // [ƒNƒŠƒA]
 }
 
 void enable_pointout_master() {
-	EnableWindow(hWndSendMSG, TRUE);	// [é€ä¿¡ç”¨ãƒãƒ£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹]
+	EnableWindow(hWndSendMSG, TRUE);	    // [‘—M—pƒ`ƒƒƒbƒgƒ{ƒbƒNƒX]
 	EnableWindow(hWndHost, FALSE);	// [HostName]
-	EnableWindow(hWndConnect, FALSE);	// [æ¥ç¶š]    
-	EnableWindow(hWndAccept, FALSE);	// [æ¥ç¶šå¾…ã¡]
-	EnableWindow(hWndReject, TRUE);	// [åˆ‡æ–­]    
-	EnableWindow(hWndRejectOrder, TRUE);	// [åˆ‡æ–­è¦è«‹]
+	EnableWindow(hWndConnect, FALSE);	// [Ú‘±]    
+	EnableWindow(hWndAccept, FALSE);	// [Ú‘±‘Ò‚¿]
+	EnableWindow(hWndReject, TRUE);	    // [Ø’f]    
+	EnableWindow(hWndRejectOrder, TRUE);	    // [Ø’f—v¿]
 	DrawableFlag = 1;
-	EnableWindow(hWndGiveup, FALSE);	// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]
-	EnableWindow(hWndCorrect, FALSE);	// [æ­£è§£ãƒœã‚¿ãƒ³]    
-	EnableWindow(hWndIncorrect, FALSE);	// [ä¸æ­£è§£ãƒœã‚¿ãƒ³]
-	EnableWindow(hWndConsent, TRUE);	// [æ‰¿è«¾]    
-	EnableWindow(hWndPointout, FALSE);	// [æŒ‡æ‘˜]    
-	EnableWindow(hWndDenial, TRUE);	// [å¦èª]   
-	EnableWindow(hWndSend, TRUE);	// [é€ä¿¡]  
-	EnableWindow(hWndChange, FALSE);	// [äº¤ä»£]
-	EnableWindow(hWndClear, FALSE);	// [ã‚¯ãƒªã‚¢]
+	EnableWindow(hWndGiveup, FALSE);	// [ƒMƒuƒAƒbƒv]
+	EnableWindow(hWndCorrect, FALSE);	// [³‰ğƒ{ƒ^ƒ“]    
+	EnableWindow(hWndIncorrect, FALSE);	// [•s³‰ğƒ{ƒ^ƒ“]
+	EnableWindow(hWndConsent, TRUE);	    // [³‘ø]    
+	EnableWindow(hWndPointout, FALSE);	// [w“E]    
+	EnableWindow(hWndDenial, TRUE);	    // [”Û”F]   
+	EnableWindow(hWndSend, TRUE);	    // [‘—M]  
+	EnableWindow(hWndChange, FALSE);	// [Œğ‘ã]
+	EnableWindow(hWndClear, FALSE);	// [ƒNƒŠƒA]
 }
 
 void enable_pointout_player() {
-	EnableWindow(hWndSendMSG, TRUE);	// [é€ä¿¡ç”¨ãƒãƒ£ãƒƒãƒˆãƒœãƒƒã‚¯ã‚¹]
+	EnableWindow(hWndSendMSG, TRUE);	    // [‘—M—pƒ`ƒƒƒbƒgƒ{ƒbƒNƒX]
 	EnableWindow(hWndHost, FALSE);	// [HostName]
-	EnableWindow(hWndConnect, FALSE);	// [æ¥ç¶š]    
-	EnableWindow(hWndAccept, FALSE);	// [æ¥ç¶šå¾…ã¡]
-	EnableWindow(hWndReject, TRUE);	// [åˆ‡æ–­]    
-	EnableWindow(hWndRejectOrder, TRUE);	// [åˆ‡æ–­è¦è«‹]
+	EnableWindow(hWndConnect, FALSE);	// [Ú‘±]    
+	EnableWindow(hWndAccept, FALSE);	// [Ú‘±‘Ò‚¿]
+	EnableWindow(hWndReject, TRUE);	    // [Ø’f]    
+	EnableWindow(hWndRejectOrder, TRUE);     // [Ø’f—v¿]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ã‚®ãƒ–ã‚¢ãƒƒãƒ—]
-	EnableWindow(hWndCorrect, FALSE);	// [æ­£è§£ãƒœã‚¿ãƒ³]    
-	EnableWindow(hWndIncorrect, FALSE);	// [ä¸æ­£è§£ãƒœã‚¿ãƒ³]
-	EnableWindow(hWndConsent, FALSE);	// [æ‰¿è«¾]    
-	EnableWindow(hWndPointout, FALSE);	// [æŒ‡æ‘˜]    
-	EnableWindow(hWndDenial, FALSE);	// [å¦èª]   
-	EnableWindow(hWndSend, TRUE);	// [é€ä¿¡]  
-	EnableWindow(hWndChange, FALSE);	// [äº¤ä»£]
-	EnableWindow(hWndClear, FALSE);	// [ã‚¯ãƒªã‚¢]
+	EnableWindow(hWndGiveup, FALSE);	// [ƒMƒuƒAƒbƒv]
+	EnableWindow(hWndCorrect, FALSE);	// [³‰ğƒ{ƒ^ƒ“]    
+	EnableWindow(hWndIncorrect, FALSE);	// [•s³‰ğƒ{ƒ^ƒ“]
+	EnableWindow(hWndConsent, FALSE);	// [³‘ø]    
+	EnableWindow(hWndPointout, FALSE);	// [w“E]    
+	EnableWindow(hWndDenial, FALSE);	// [”Û”F]   
+	EnableWindow(hWndSend, TRUE);	    // [‘—M]  
+	EnableWindow(hWndChange, FALSE);	// [Œğ‘ã]
+	EnableWindow(hWndClear, FALSE);	// [ƒNƒŠƒA]
 }

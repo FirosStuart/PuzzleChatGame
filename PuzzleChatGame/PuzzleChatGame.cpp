@@ -71,7 +71,7 @@ int turn = 0;					//手番
 int dice_num;					//ダイスの結果
 int rule_num;					//ルールの番号
 
-const RECT d = { 250, 105, 1150, 661 };               // 描画領域(左上隅のx座標, 左上隅のy座標, 右下隅のx座標, 右下隅のy座標)
+const RECT d = { 100, 100, 600, 500 };               // 描画領域(左上隅のx座標, 左上隅のy座標, 右下隅のx座標, 右下隅のy座標)
 
 int n;                                              // カウンタ
 int flag[MAX_ARRAY];                                // ペンダウンフラグ
@@ -213,7 +213,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	hInst = hInstance; // Store instance handle in our global variable
 
 	HWND hWnd = CreateWindowW(lpClassName, lpWindowName, WS_OVERLAPPEDWINDOW,
-		0, 0, WINDOW_W, WINDOW_H, nullptr, nullptr, hInstance, nullptr);
+		100, 100, WINDOW_W, WINDOW_H, nullptr, nullptr, hInstance, nullptr);
+
 
 	if (!hWnd)
 	{
@@ -266,15 +267,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 
 		// [接続]ボタン
 		hWndConnect = CreateWindow("button", "解答先手",
-			WS_CHILD | WS_VISIBLE, 267, 330, 400, 331,
+			WS_CHILD | WS_VISIBLE, 125, 325, 150, 150,
 			hWnd, (HMENU)IDB_CONNECT, NULL, NULL);
 		// [接続待ち]ボタン
 		hWndAccept = CreateWindow("button", "出題先手",
-			WS_CHILD | WS_VISIBLE, 733, 330, 400, 331,
+			WS_CHILD | WS_VISIBLE, 425, 325, 150, 150,
 			hWnd, (HMENU)IDB_ACCEPT, NULL, NULL);
 		hWndWelcome = CreateWindow(TEXT("static"), TEXT("WELCOME!"), WS_CHILD | WS_VISIBLE,
-			433, 115, 534, 100, hWnd, NULL, NULL, NULL);
-		hFont = CreateFont(100, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
+			200, 100, 300, 60, hWnd, NULL, NULL, NULL);
+			hFont = CreateFont(60, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 		SendMessage(hWndWelcome, WM_SETFONT, WPARAM(hFont), TRUE);
 
 		SockInit(hWnd);         // ソケット初期化
@@ -308,9 +309,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			DestroyWindow(hWndWelcome);
 			DestroyWindow(hWndHost);
 
-			hWndWelcome = CreateWindow(TEXT("static"), TEXT("WAITING......"), WS_CHILD | WS_VISIBLE,
-				433, 115, 534, 100, hWnd, NULL, NULL, NULL);
-			hFont = CreateFont(100, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
+			hWndWelcome = CreateWindow(TEXT("static"), TEXT("CONNECTING..."), WS_CHILD | WS_VISIBLE,
+				140, 200, 400, 60, hWnd, NULL, NULL, NULL);
+			hFont = CreateFont(60, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 			SendMessage(hWndWelcome, WM_SETFONT, WPARAM(hFont), TRUE);
 			if (SockAccept(hWnd)) { // 接続待ち要求
 				return 0L;			// 接続待ち失敗
@@ -325,19 +326,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			DestroyWindow(hWndWelcome);
 			DestroyWindow(hWndHost);
 
-			hWndWelcome = CreateWindow(TEXT("static"), TEXT("WAITING......"), WS_CHILD | WS_VISIBLE,
-				433, 115, 534, 100, hWnd, NULL, NULL, NULL);
-			hFont = CreateFont(100, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
+			hWndWelcome = CreateWindow(TEXT("static"), TEXT("WAITING..."), WS_CHILD | WS_VISIBLE,
+				200, 100, 300, 60, hWnd, NULL, NULL, NULL);
+			hFont = CreateFont(60, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 			SendMessage(hWndWelcome, WM_SETFONT, WPARAM(hFont), TRUE);
-			hWndHostName = CreateWindow(TEXT("static"), TEXT("Input the IP Address"), WS_CHILD | WS_VISIBLE,
-				500, 277, 200, 30, hWnd, NULL, NULL, NULL);
+
+			hWndHostName = CreateWindow(TEXT("static"), TEXT("Input IPAddress"), WS_CHILD | WS_VISIBLE,
+				200, 200, 150, 30, hWnd, NULL, NULL, NULL);
 			// ホスト名入力用エディットボックス
 			hWndHost = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-				WS_CHILD | WS_VISIBLE, 700, 277, 200, 30,
+				WS_CHILD | WS_VISIBLE, 350, 200, 150, 30,
 				hWnd, (HMENU)IDF_HOSTNAME, NULL, NULL);
 			hWndStart = CreateWindow("button", "START",
-				WS_CHILD | WS_VISIBLE, 500, 330, 400, 331,
+				WS_CHILD | WS_VISIBLE, 200, 300, 300, 140,
 				hWnd, (HMENU)IDB_START, NULL, NULL);
+
 			return 0L;
 		case IDB_START:
 			GetWindowText(hWndHost, host, sizeof(host));
@@ -611,15 +614,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 	// 受信メッセージ表示用エディットボックス
 						
 						hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-							WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 410, 686, 268, 95,
+							WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 165, 455, 150, 70,
 							hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 						// 送信メッセージ入力用エディットボックス
 						hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-							WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 698, 686, 268, 95,
+							WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 320, 455, 150, 70,
 							hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
 						// [送信]ボタン
 						hWndSend = CreateWindow("button", "送信",
-							WS_CHILD | WS_VISIBLE | WS_DISABLED, 983, 715, 80, 50,
+							WS_CHILD | WS_VISIBLE | WS_DISABLED, 480, 485, 50, 30,
 							hWnd, (HMENU)IDB_SEND, NULL, NULL);
 						//ColorSet(hWnd, 1);
 						//InvalidateRect(hWnd, &d, FALSE);
@@ -628,27 +631,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 
 						// 受信メッセージ表示用エディットボックス
 						hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-							WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 422, 130, 556, 250,
+							WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 200, 150, 300, 150,
 							hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 						// 送信メッセージ入力用エディットボックス
 						hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-							WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 422, 386, 556, 250,
+							WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 200, 310, 300, 150,
 							hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
 						// [送信]ボタン
 						hWndSend = CreateWindow("button", "送信",
-							WS_CHILD | WS_VISIBLE | WS_DISABLED, 640, 700, 80, 50,
+							WS_CHILD | WS_VISIBLE | WS_DISABLED, 325, 450, 50, 30,
 							hWnd, (HMENU)IDB_SEND, NULL, NULL);
 						//InvalidateRect(hWnd, &d, TRUE);
 					}
 					else if (PlayerRuleNum == 2) {
 						
 						// 送信メッセージ入力用エディットボックス
-						hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-							WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 410, 686, 556, 95,
-							hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
+						hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
+							WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 165, 455, 300, 70,
+							hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 						// [送信]ボタン
 						hWndSend = CreateWindow("button", "送信",
-							WS_CHILD | WS_VISIBLE | WS_DISABLED, 983, 715, 80, 50,
+							WS_CHILD | WS_VISIBLE | WS_DISABLED, 480, 715, 50, 30,
 							hWnd, (HMENU)IDB_SEND, NULL, NULL);
 						//ColorSet(hWnd, 1);
 						//InvalidateRect(hWnd, &d, FALSE);
@@ -983,29 +986,29 @@ void game_start(HWND hWnd) {
 
 	// 制約条件用エディットボックス
 	hWndRule = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-		WS_CHILD | WS_VISIBLE | ES_READONLY, 25, 25, 200, 40,
+		WS_CHILD | WS_VISIBLE | ES_READONLY, 35, 10, 100, 30,
 		hWnd, (HMENU)IDF_RULE, NULL, NULL);
-	hFont = CreateFont(40, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
+	hFont = CreateFont(23, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 	SendMessage(hWndRule, WM_SETFONT, WPARAM(hFont), TRUE);
 	// お題用エディットボックス
 	hWndQuestion = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-		WS_CHILD | WS_VISIBLE | ES_READONLY, 25, 65, 200, 40,
+		WS_CHILD | WS_VISIBLE | ES_READONLY, 10, 45, 150, 30,
 		hWnd, (HMENU)IDF_QUESTION, NULL, NULL);
-	hFont = CreateFont(30, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
+	hFont = CreateFont(23, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 	SendMessage(hWndQuestion, WM_SETFONT, WPARAM(hFont), TRUE);
 	// 自分の得点用エディットボックス
 	hWndScore_pl1 = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-		WS_CHILD | WS_VISIBLE | ES_READONLY, 580, 25, 50, 50,
+		WS_CHILD | WS_VISIBLE | ES_READONLY, 255, 25, 40, 50,
 		hWnd, (HMENU)IDF_SCORE_PL1, NULL, NULL);
 	hFont = CreateFont(50, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 	SendMessage(hWndScore_pl1, WM_SETFONT, WPARAM(hFont), TRUE);
 	//VS
-	hWndVS = CreateWindow("static", "VS", WS_CHILD | WS_VISIBLE, 650, 15, 100, 62, hWnd, NULL, NULL, NULL);
-	hFont = CreateFont(70, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
+	hWndVS = CreateWindow("static", "VS", WS_CHILD | WS_VISIBLE, 318, 25, 64, 50, hWnd, NULL, NULL, NULL);
+	hFont = CreateFont(50, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 	SendMessage(hWndVS, WM_SETFONT, WPARAM(hFont), TRUE);
 	// 相手の得点用エディットボックス
 	hWndScore_pl2 = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-		WS_CHILD | WS_VISIBLE | ES_READONLY, 770, 25, 50, 50,
+		WS_CHILD | WS_VISIBLE | ES_READONLY, 405, 25, 40, 50,
 		hWnd, (HMENU)IDF_SCORE_PL2, NULL, NULL);
 	hFont = CreateFont(50, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 	SendMessage(hWndScore_pl2, WM_SETFONT, WPARAM(hFont), TRUE);
@@ -1018,70 +1021,70 @@ void game_start(HWND hWnd) {
 		*/
 	// [切断]ボタン
 	hWndReject = CreateWindow("button", "切断",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 1251, 25, 124, 30,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 550, 10, 124, 30,
 		hWnd, (HMENU)IDB_REJECT, NULL, NULL);
 	// [交代]ボタン
 	hWndChange = CreateWindow("button", "交代",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 1251, 59, 60, 35,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 550, 44, 60, 35,
 		hWnd, (HMENU)IDB_CHANGE, NULL, NULL);
 	// [ギブアップ]ボタン
-	hWndGiveup = CreateWindow("button", "ギブアップ",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 1315, 59, 60, 35,
+	hWndGiveup = CreateWindow("button", "放棄",
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 620, 44, 60, 35,
 		hWnd, (HMENU)IDB_GIVEUP, NULL, NULL);
 
 	// [クリア]ボタン
 	hWndClear = CreateWindow("button", "クリア",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 63, 133, 124, 70,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 17, 100, 66, 41,
 		hWnd, (HMENU)IDB_CLEAR, NULL, NULL);
 	// [正解]ボタン
 	hWndCorrect = CreateWindow("button", "正解",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 63, 219, 124, 70,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 17, 156, 66, 41,
 		hWnd, (HMENU)IDB_CORRECT, NULL, NULL);
 	// [不正解]ボタン
 	hWndIncorrect = CreateWindow("button", "不正解",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 63, 305, 124, 70,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 17, 212, 66, 41,
 		hWnd, (HMENU)IDB_INCORRECT, NULL, NULL);
 	// [指摘]ボタン
 	hWndPointout = CreateWindow("button", "指摘",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 63, 391, 124, 70,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 17, 268, 66, 41,
 		hWnd, (HMENU)IDB_POINTOUT, NULL, NULL);
 	// [承諾]ボタン
 	hWndConsent = CreateWindow("button", "承諾",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 63, 477,124, 70,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 17, 324, 66, 41,
 		hWnd, (HMENU)IDB_CONSENT, NULL, NULL);
 	// [否認]ボタン
 	hWndDenial = CreateWindow("button", "否認",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 63, 563, 124, 70,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 17, 380, 66, 41,
 		hWnd, (HMENU)IDB_DENIAL, NULL, NULL);
 
 	// ヘルプメッセージ用エディットボックス
 	hWndHelp = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-		WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 1075, 680, 300, 100,
+		WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 540, 440, 130, 80,
 		hWnd, (HMENU)IDF_HELP, NULL, NULL);
 
 	// [クリア]ボタン
 	hWndBlack = CreateWindow("button", "黒",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 1213, 133, 124, 70,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 600, 100, 66, 41,
 		hWnd, (HMENU)IDB_BLACK, NULL, NULL);
 	// [正解]ボタン
 	hWndRed = CreateWindow("button", "赤",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 1213, 219, 124, 70,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 600, 156, 66, 41,
 		hWnd, (HMENU)IDB_RED, NULL, NULL);
 	// [不正解]ボタン
 	hWndGreen = CreateWindow("button", "緑",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 1213, 305, 124, 70,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 600, 212, 66, 41,
 		hWnd, (HMENU)IDB_GREEN, NULL, NULL);
 	// [指摘]ボタン
 	hWndYellow = CreateWindow("button", "黄",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 1213, 391, 124, 70,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 600, 268, 66, 41,
 		hWnd, (HMENU)IDB_YELLOW, NULL, NULL);
 	// [承諾]ボタン
 	hWndBlue = CreateWindow("button", "青",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 1213, 477, 124, 70,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 600, 324, 66, 41,
 		hWnd, (HMENU)IDB_BLUE, NULL, NULL);
 	// [否認]ボタン
 	hWndOrange = CreateWindow("button", "橙",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 1213, 563, 124, 70,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 600, 380, 66, 41,
 		hWnd, (HMENU)IDB_ORANGE, NULL, NULL);
 
 	rand0toi(card, 10);		//カード順番を設定する
@@ -1138,15 +1141,15 @@ int change(HWND hWnd, int a, int b) {
 			enable_color();
 			// 受信メッセージ表示用エディットボックス
 			hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 410, 686, 268, 95,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 165, 455, 150, 70,
 				hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 			// 送信メッセージ入力用エディットボックス
 			hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 698, 686, 268, 95,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 320, 455, 150, 70,
 				hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
 			// [送信]ボタン
 			hWndSend = CreateWindow("button", "送信",
-				WS_CHILD | WS_VISIBLE | WS_DISABLED, 983, 715, 80, 50,
+				WS_CHILD | WS_VISIBLE | WS_DISABLED, 480, 485, 50, 30,
 				hWnd, (HMENU)IDB_SEND, NULL, NULL);
 			EnableWindow(hWndSendMSG, TRUE);//送信用チャットボックス、
 			EnableWindow(hWndSend, TRUE);	//[送信]ボタン、
@@ -1159,15 +1162,15 @@ int change(HWND hWnd, int a, int b) {
 
 			// 受信メッセージ表示用エディットボックス
 			hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 422, 130, 556, 250,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 200, 150, 300, 150,
 				hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 			// 送信メッセージ入力用エディットボックス
 			hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 422, 386, 556, 250,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 200, 310, 300, 150,
 				hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
 			// [送信]ボタン
 			hWndSend = CreateWindow("button", "送信",
-				WS_CHILD | WS_VISIBLE | WS_DISABLED, 640, 700, 80, 50,
+				WS_CHILD | WS_VISIBLE | WS_DISABLED, 325, 450, 50 ,30,
 				hWnd, (HMENU)IDB_SEND, NULL, NULL);
 			EnableWindow(hWndSendMSG, TRUE);//送信用チャットボックス、
 			EnableWindow(hWndSend, TRUE);	//[送信]ボタンを有効にする
@@ -1179,7 +1182,7 @@ int change(HWND hWnd, int a, int b) {
 			SetWindowText(hWndHelp, "絵でお題を表現してください。\r\n絵を消したい場合はクリアを押してください。");
 			// 受信メッセージ表示用エディットボックス
 			hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 410, 686, 556, 95,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 165, 455, 300, 70,
 				hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 			EnableWindow(hWndClear, TRUE);	// [クリア]ボタンを有効にし、
 			//ColorSet(hWnd, 1);
@@ -1206,15 +1209,15 @@ int change(HWND hWnd, int a, int b) {
 // 受信メッセージ表示用エディットボックス
 			enable_color();
 			hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 410, 686, 268, 95,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 165, 455, 150, 70,
 				hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 			// 送信メッセージ入力用エディットボックス
 			hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 698, 686, 268, 95,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 320, 455, 150, 70,
 				hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
 			// [送信]ボタン
 			hWndSend = CreateWindow("button", "送信",
-				WS_CHILD | WS_VISIBLE | WS_DISABLED, 983, 715, 80, 50,
+				WS_CHILD | WS_VISIBLE | WS_DISABLED, 480, 485, 50, 30,
 				hWnd, (HMENU)IDB_SEND, NULL, NULL);
 			//ColorSet(hWnd, 1);
 			//InvalidateRect(hWnd, &d, FALSE);
@@ -1223,27 +1226,27 @@ int change(HWND hWnd, int a, int b) {
 
 			// 受信メッセージ表示用エディットボックス
 			hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 422, 130, 556, 250,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 200, 150, 300, 150,
 				hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 			// 送信メッセージ入力用エディットボックス
 			hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 422, 386, 556, 250,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 200, 310, 300, 150,
 				hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
 			// [送信]ボタン
 			hWndSend = CreateWindow("button", "送信",
-				WS_CHILD | WS_VISIBLE | WS_DISABLED, 640, 700, 80, 50,
+				WS_CHILD | WS_VISIBLE | WS_DISABLED, 325, 450, 50, 30,
 				hWnd, (HMENU)IDB_SEND, NULL, NULL);
 			//InvalidateRect(hWnd, &d, TRUE);
 		}
 		else if (PlayerRuleNum == 2) {
 			enable_color();
 			// 送信メッセージ入力用エディットボックス
-			hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 410, 686, 556, 95,
-				hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
+			hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 165, 455, 300, 70,
+				hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 			// [送信]ボタン
 			hWndSend = CreateWindow("button", "送信",
-				WS_CHILD | WS_VISIBLE | WS_DISABLED, 983, 715, 80, 50,
+				WS_CHILD | WS_VISIBLE | WS_DISABLED, 480, 715, 50, 30,
 				hWnd, (HMENU)IDB_SEND, NULL, NULL);
 			//ColorSet(hWnd, 1);
 			//InvalidateRect(hWnd, &d, FALSE);

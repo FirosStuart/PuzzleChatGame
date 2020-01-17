@@ -8,7 +8,7 @@
 #define IDB_CONNECT     1000            // [接続]ボタン
 #define IDB_ACCEPT      1001            // [接続待ち]ボタン
 #define IDB_REJECT      1002            // [切断]ボタン
-#define IDB_REJECTORDER 1003            // [切断要請]ボタン
+#define IDB_REJECTPRE 1003            // [切断要請]ボタン
 #define IDB_GIVEUP      1004			// [ギブアップ]ボタン
 #define IDB_CORRECT		1005			// [正解]ボタン
 #define	IDB_INCORRECT   1006			// [不正解]ボタン

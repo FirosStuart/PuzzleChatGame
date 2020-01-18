@@ -1,0 +1,15 @@
+﻿  PuzzleChatGame.cpp
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(406,7): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(417,38): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(429,44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(436,38): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(443,38): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(448,38): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(455,38): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(464,38): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(486,38): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(926,36): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(954,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(976,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\PuzzleChatGame\PuzzleChatGame.cpp(1128,37): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+  PuzzleChatGame.vcxproj -> C:\Users\Hinos\OneDrive\デスクトップ\PuzzleChatGame\x64\Debug\PuzzleChatGame.exe

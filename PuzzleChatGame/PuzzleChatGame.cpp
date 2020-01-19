@@ -1,4 +1,4 @@
-﻿//  ヘッダファイル
+//  ヘッダファイル
 
 
 #include "Resource.h"
@@ -17,17 +17,13 @@ HOSTENT* phe;							// HOSTENT構造体
 
 HPEN hPenBlack;							// 黒ペン
 HPEN hPenRed;							// 赤ペン
-//HPEN hPenMy;
 
-static HWND  hWndBlack;
-static HWND  hWndRed;
 
-static HWND  hWndVS;
-static HWND hWndWelcome;
-static HWND hWndHostName;
-static HFONT hFont;
-static HWND hWndStart;
-
+static HWND  hWndVS;			// VS文字
+static HWND hWndWelcome;//WelcomeWindows
+static HWND hWndHostName;//HostnameWindows
+static HFONT hFont;//フォント指定Windows
+static HWND hWndStart;//クライアントが開始するボタン
 
 static HWND hWndHost;                       // ホスト名入力用エディットボックス
 static HWND hWndQuestion;                   // お題表示用エディットボックス
@@ -39,8 +35,8 @@ static HWND hWndScore_pl2;                  // 相手の得点用エディット
 static HWND hWndHelp;                       // ヘルプメッセージ用エディットボックス
 static HWND hWndConnect, hWndAccept;        // [接続]ボタンと[接続待ち]ボタン
 static HWND hWndReject;                     // [切断]ボタン
-static HWND hWndBack;                // [初期切断]ボタン
-static HWND hWndGiveup;						// [ギブアップ]ボタン
+static HWND hWndBack;						// [戻る]ボタン
+static HWND hWndGiveup;						// [パス]ボタン
 static HWND hWndCorrect;					// [正解]ボタン
 static HWND hWndIncorrect;					// [不正解]ボタン
 static HWND hWndPointout;					// [指摘]ボタン
@@ -59,9 +55,11 @@ int score_PL1 = 0;				//PL1のスコア
 int score_PL2 = 0;				//PL2のスコア
 int turn = 0;					//手番
 int dice_num;					//ダイスの結果
-int rule_num;					//ルールの番号
+int rule_num=-1;				//ルールの番号
 
-const RECT d = { 100, 100, 600, 500 };               // 描画領域(左上隅のx座標, 左上隅のy座標, 右下隅のx座標, 右下隅のy座標)
+const RECT d = { 160, 110, 540, 440 };               // 描画領域(左上隅のx座標, 左上隅のy座標, 右下隅のx座標, 右下隅のy座標)
+const RECT line = { 150, 110, 550, 450 };               // 描画領域(左上隅のx座標, 左上隅のy座標, 右下隅のx座標, 右下隅のy座標)
+const RECT window_size = { 0, 0, 700, 600 };               // 描画領域(左上隅のx座標, 左上隅のy座標, 右下隅のx座標, 右下隅のy座標)
 
 int n;                                              // カウンタ
 int flag[MAX_ARRAY];                                // ペンダウンフラグ
@@ -110,56 +108,49 @@ BOOL SockConnect(HWND hWnd, LPCSTR host);               // ソケット接続
 
 void enable_master();			//親の初期状態	
 void enable_player();			//子の初期状態
-void enable_end();				//ゲーム終了時の状態
 void enable_correct();			//正解した時の子の状態
 void enable_pause();			//正解ボタンを押した後の親の状態
 void enable_pointout_master();	//指摘をされた後の親の状態
 void enable_pointout_player();	//指摘をした後の子の状態
-void enable_wait();				//接続待ちの時の状態
-void enable_standby();			//接続する前の状態
-void enable_color();
-// Global Variables:
+
 HINSTANCE hInst;                                // current instance
 
+
+//WindowSDK 1909 version
 // Forward declarations of functions included in this code module:
-ATOM                MyRegisterClass(HINSTANCE hInstance);
-BOOL                InitInstance(HINSTANCE, int);
-LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+ATOM                MyRegisterClass(HINSTANCE hInstance); // ウィンドウクラス登録
+BOOL                InitInstance(HINSTANCE, int);// インスタンス初期化
+LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);//  ウィンドウ関数(イベント処理を記述)
+INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);//ABOUT関数
 //  WinMain関数 (Windowsプログラム起動時に呼ばれる関数)
-int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-	_In_opt_ HINSTANCE hPrevInstance,
-	_In_ LPWSTR    lpCmdLine,
-	_In_ int       nCmdShow)
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,_In_opt_ HINSTANCE hPrevInstance,_In_ LPWSTR lpCmdLine,_In_ int nCmdShow)
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	// TODO: Place code here.
-
-	MyRegisterClass(hInstance);
+	MyRegisterClass(hInstance);// ウィンドウクラス登録
 
 	// Perform application initialization:
-	if (!InitInstance(hInstance, nCmdShow))
+	if (!InitInstance(hInstance, nCmdShow))// インスタンス初期化
 	{
 		return FALSE;
 	}
 
-	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_PUZZLECHATGAME));
+	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_PUZZLECHATGAME));//アクセルロード
 
-	MSG msg;
+	MSG msg;     // メッセージ
 
 	// Main message loop:
-	while (GetMessage(&msg, nullptr, 0, 0))
+	while (GetMessage(&msg, nullptr, 0, 0))// メッセージを取得
 	{
 		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
 		{
 			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			DispatchMessage(&msg); // メッセージ送る
 		}
 	}
 
-	return (int)msg.wParam;
+	return (int)msg.wParam;  // プログラム終了
 }
 
 //
@@ -173,17 +164,17 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 	wcex.cbSize = sizeof(WNDCLASSEX);
 
-	wcex.style = CS_HREDRAW | CS_VREDRAW;
-	wcex.lpfnWndProc = WndProc;
-	wcex.cbClsExtra = 0;
-	wcex.cbWndExtra = 0;
-	wcex.hInstance = hInstance;
-	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_PUZZLECHATGAME));
-	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_PUZZLECHATGAME);
-	wcex.lpszClassName = lpClassName;
-	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+	wcex.style = CS_HREDRAW | CS_VREDRAW;// クラススタイル
+	wcex.lpfnWndProc = WndProc;// ウィンドウ関数
+	wcex.cbClsExtra = 0;// クラス拡張情報
+	wcex.cbWndExtra = 0;// ウィンドウ拡張情報
+	wcex.hInstance = hInstance;// インスタンス
+	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_PUZZLECHATGAME));// アイコンハンドル
+	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);// マウスポインタ
+	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);// ウィンドウの背景色
+	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_PUZZLECHATGAME);   // メニュー
+	wcex.lpszClassName = lpClassName;   // クラス名
+	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));// スモールアイコン
 
 	return RegisterClassExW(&wcex);
 }
@@ -198,12 +189,23 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //        In this function, we save the instance handle in a global variable and
 //        create and display the main program window.
 //
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
+BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)// インスタンス初期化
 {
 	hInst = hInstance; // Store instance handle in our global variable
 
-	HWND hWnd = CreateWindowW(lpClassName, lpWindowName, WS_OVERLAPPEDWINDOW,
-		100, 100, WINDOW_W, WINDOW_H, nullptr, nullptr, hInstance, nullptr);
+	HWND hWnd = CreateWindowW(
+		lpClassName, // ウィンドウクラス名
+		lpWindowName,      // ウィンドウ名
+		WS_OVERLAPPEDWINDOW,// ウィンドウ属性
+		100, // ウィンドウ表示位置(X)
+		100,  // ウィンドウ表示位置(Y)
+		WINDOW_W, // ウィンドウサイズ(X)
+		WINDOW_H,    // ウィンドウサイズ(Y)
+		nullptr,  // 親ウィンドウハンドル
+		nullptr,
+		hInstance,   // インスタンスハンドル
+		nullptr
+	);	// ウィンドウ生成
 
 
 	if (!hWnd)
@@ -211,8 +213,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 		return FALSE;
 	}
 
-	ShowWindow(hWnd, nCmdShow);
-	UpdateWindow(hWnd);
+	ShowWindow(hWnd, nCmdShow);// ウィンドウ表示モード
+	UpdateWindow(hWnd);   // ウインドウ更新
 
 	return TRUE;
 }
@@ -222,13 +224,13 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	UNREFERENCED_PARAMETER(lParam);
 	switch (message)
 	{
-	case WM_INITDIALOG:
+	case WM_INITDIALOG://ダイアログ初期化
 		return (INT_PTR)TRUE;
 
 	case WM_COMMAND:
 		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
 		{
-			EndDialog(hDlg, LOWORD(wParam));
+			EndDialog(hDlg, LOWORD(wParam));//ダイアログ生成
 			return (INT_PTR)TRUE;
 		}
 		break;
@@ -254,59 +256,44 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 
 	case WM_CREATE:			// ウィンドウが生成された
 	// 文字列表示
-
+		rule_num = -1;
 		// [接続]ボタン
-		hWndConnect = CreateWindow("button", "解答先手",
+		hWndConnect = CreateWindow("button", "参加する",
 			WS_CHILD | WS_VISIBLE, 125, 325, 150, 150,
 			hWnd, (HMENU)IDB_CONNECT, NULL, NULL);
 		// [接続待ち]ボタン
-		hWndAccept = CreateWindow("button", "出題先手",
+		hWndAccept = CreateWindow("button", "参加者を待つ",
 			WS_CHILD | WS_VISIBLE, 425, 325, 150, 150,
 			hWnd, (HMENU)IDB_ACCEPT, NULL, NULL);
+		//WELCOME!と表示
 		hWndWelcome = CreateWindow(TEXT("static"), TEXT("WELCOME!"), WS_CHILD | WS_VISIBLE,
-			200, 100, 300, 60, hWnd, NULL, NULL, NULL);
+			200, 80, 300, 60, hWnd, NULL, NULL, NULL);
 			hFont = CreateFont(60, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 		SendMessage(hWndWelcome, WM_SETFONT, WPARAM(hFont), TRUE);
 
 		SockInit(hWnd);         // ソケット初期化
 		hPenBlack = (HPEN)CreatePen(PS_SOLID, 3, RGB(0, 0, 0));		//黒ペン作成
 		hPenRed = (HPEN)CreatePen(PS_SOLID, 3, RGB(255, 0, 0));		//赤ペン作成
-		//hPenOrange = (HPEN)CreatePen(PS_SOLID, 3, RGB(255, 69, 0));		//黒ペン作成
-		//hPenGreen = (HPEN)CreatePen(PS_SOLID, 3, RGB(0, 255, 0));		//赤ペン作成
-		//hPenYellow = (HPEN)CreatePen(PS_SOLID, 3, RGB(255, 255, 0));		//黒ペン作成
-		//hPenBlue = (HPEN)CreatePen(PS_SOLID, 3, RGB(0, 0, 255));		//赤ペン作成
-		//hPenMy = hPenBlack;//デフォルト
+		
 		return 0L;
 
 	case WM_COMMAND:				// ボタンが押された場合
 
 		switch (LOWORD(wP)) {
-		/*
-		case IDB_BLACK:
-			hPenMy = hPenBlack;
-		case IDB_RED :
-			hPenMy = hPenRed;
-		case IDB_ORANGE :
-			hPenMy = hPenOrange;
-		case IDB_GREEN :
-			hPenMy = hPenGreen;
-		case IDB_YELLOW :
-			hPenMy = hPenYellow;
-		case IDB_BLUE:
-			hPenMy = hPenBlue;
-			*/
+		
 		case IDB_ACCEPT:			// [接続待ち]ボタン押した場合(サーバー)
+			//作成したウィンドウを破棄する
 			DestroyWindow(hWndConnect);
 			DestroyWindow(hWndAccept);
 			DestroyWindow(hWndWelcome);
-			DestroyWindow(hWndHost);
 
-			// [切断]ボタン
+			// [戻る]ボタン
 			hWndBack = CreateWindow("button", "BACK",
 				WS_CHILD | WS_VISIBLE | WS_DISABLED, 550, 10, 124, 30,
 				hWnd, (HMENU)IDB_BACK, NULL, NULL);
-			hWndWelcome = CreateWindow(TEXT("static"), TEXT("CONNECTING..."), WS_CHILD | WS_VISIBLE,
-				140, 200, 400, 60, hWnd, NULL, NULL, NULL);
+			//ウィンドウWelcomeにWAITING...と表示する
+			hWndWelcome = CreateWindow(TEXT("static"), TEXT("WAITING..."), WS_CHILD | WS_VISIBLE,
+				200, 200, 300, 60, hWnd, NULL, NULL, NULL);
 			hFont = CreateFont(60, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 			SendMessage(hWndWelcome, WM_SETFONT, WPARAM(hFont), TRUE);
 			EnableWindow(hWndBack, TRUE);	    // [切断]    
@@ -314,17 +301,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				return 0L;			// 接続待ち失敗
 
 			}
-			//enable_wait();			//接続待ちの状態にする
+
 			return 0L;
 
 		case IDB_CONNECT:					// [接続]ボタン押した場合(クライアント)
 			DestroyWindow(hWndConnect);
 			DestroyWindow(hWndAccept);
 			DestroyWindow(hWndWelcome);
-			DestroyWindow(hWndHost);
 
-			hWndWelcome = CreateWindow(TEXT("static"), TEXT("WAITING..."), WS_CHILD | WS_VISIBLE,
-				200, 100, 300, 60, hWnd, NULL, NULL, NULL);
+			hWndWelcome = CreateWindow(TEXT("static"), TEXT("CONNECTING..."), WS_CHILD | WS_VISIBLE,
+				140, 100, 400, 60, hWnd, NULL, NULL, NULL);
 			hFont = CreateFont(60, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 			SendMessage(hWndWelcome, WM_SETFONT, WPARAM(hFont), TRUE);
 
@@ -337,6 +323,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			hWndStart = CreateWindow("button", "START",
 				WS_CHILD | WS_VISIBLE, 200, 300, 300, 140,
 				hWnd, (HMENU)IDB_START, NULL, NULL);
+			SendMessage(hWndStart, WM_SETFONT, WPARAM(hFont), TRUE);
 
 			// [切断]ボタン
 			hWndBack = CreateWindow("button", "BACK",
@@ -344,20 +331,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				hWnd, (HMENU)IDB_BACK, NULL, NULL);
 			EnableWindow(hWndBack, TRUE);	    // [切断]    
 			return 0L;
+
 		case IDB_START:
-			EnableWindow(hWndReject, FALSE);	    // [切断]    
+			EnableWindow(hWndReject, FALSE);	    // [切断]   
 			GetWindowText(hWndHost, host, sizeof(host));
-			if (SockConnect(hWnd, host)) {  // 接続要求
+			if (SockConnect(hWnd, host)==FALSE) {	// 接続要求
+				//ダブルクリック時のエラーを回避
+				EnableWindow(hWndStart, FALSE);	    // [接続]  
 				return 0L;
-
 			}
-
-			DestroyWindow(hWndHostName);
-			DestroyWindow(hWndWelcome);
-			DestroyWindow(hWndHost);
-			DestroyWindow(hWndStart);
-			DestroyWindow(hWndBack);
-			//enable_wait();					//接続待ちの状態にする
 			return 0L;
 
 		case IDB_REJECT:					// [切断]ボタン押した場合
@@ -373,11 +355,50 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 
 			}
 			phe = NULL;
-			enable_standby();
+			//以下のウィンドウを削除し初期状態の戻す
+			DestroyWindow(hWndQuestion);                   // お題表示用エディットボックス
+			DestroyWindow(hWndRule);                       // 制約条件用エディットボックス
+			DestroyWindow(hWndSendMSG);                    // 送信メッセージ入力用エディットボックス
+			DestroyWindow(hWndRecvMSG);                    // 受信メッセージ表示用エディットボックス
+			DestroyWindow(hWndScore_pl1);                  // 自分の得点用エディットボックス
+			DestroyWindow(hWndScore_pl2);                  // 相手の得点用エディットボックス
+			DestroyWindow(hWndHelp);                       // ヘルプメッセージ用エディットボックス
+			DestroyWindow(hWndReject);                     // [切断]ボタン
+			DestroyWindow(hWndGiveup);						// [パス]ボタン
+			DestroyWindow(hWndCorrect);					// [正解]ボタン
+			DestroyWindow(hWndIncorrect);					// [不正解]ボタン
+			DestroyWindow(hWndPointout);					// [指摘]ボタン
+			DestroyWindow(hWndConsent);					// [承諾]ボタン
+			DestroyWindow(hWndDenial);						// [否認]ボタン
+			DestroyWindow(hWndChange);						// [交代]ボタン
+			DestroyWindow(hWndSend);                       // [送信]ボタン
+			DestroyWindow(hWndClear);
+			DestroyWindow(hWndVS);
+			
+			ClearPaint(hWnd);			//描画ボックスをクリアする
+
+			rule_num = -1;
+			// [接続]ボタン
+			hWndConnect = CreateWindow("button", "参加する",
+				WS_CHILD | WS_VISIBLE, 125, 325, 150, 150,
+				hWnd, (HMENU)IDB_CONNECT, NULL, NULL);
+			// [接続待ち]ボタン
+			hWndAccept = CreateWindow("button", "参加者を待つ",
+				WS_CHILD | WS_VISIBLE, 425, 325, 150, 150,
+				hWnd, (HMENU)IDB_ACCEPT, NULL, NULL);
+			//WELCOME!と表示
+			hWndWelcome = CreateWindow(TEXT("static"), TEXT("WELCOME!"), WS_CHILD | WS_VISIBLE,
+				200, 100, 300, 60, hWnd, NULL, NULL, NULL);
+			hFont = CreateFont(60, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
+			SendMessage(hWndWelcome, WM_SETFONT, WPARAM(hFont), TRUE);
+
+			SockInit(hWnd);         // ソケット初期化
+			UpdateWindow(hWnd);                                 // ウインドウ更新
+			InvalidateRect(hWnd, &window_size, TRUE);			//能動的に再描画する
 
 			return 0L;
 
-		case IDB_BACK:						// [初期切断]ボタン押した場合
+		case IDB_BACK:						// [戻る]ボタン押した場合
 
 			if (sock != INVALID_SOCKET) {   // 自分がクライアント側なら
 				closesocket(sock);			// ソケットを閉じる
@@ -412,14 +433,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			ChatReset(hWndSendMSG);								//チャットボックスのクリア
 			return 0L;
 
-		case IDB_GIVEUP:									// [ギブアップ]ボタン押した場合
-			strcpy_s(buf, "GIVEUP");						// ギブアップの内容をバッファに保存
+		case IDB_GIVEUP:									// [パス]ボタン押した場合
+			strcpy_s(buf, "GIVEUP");						// パスの内容をバッファに保存
 			send(sock, buf, strlen(buf) + 1, 0);			// GIVEUPと送信
 			score_Master = 1;								// 親と子の点数を１点ずつ付与
 			score_Player = 1;
-			MessageBox(hWnd, "ギブアップしました。",
-				"Information", MB_OK | MB_ICONINFORMATION);	//ギブアップしましたとメッセージボックスに表示する
+			MessageBox(hWnd, "パスしました。",
+				"Information", MB_OK | MB_ICONINFORMATION);	//パスしましたとメッセージボックスに表示する
 			change(hWnd, score_Master, score_Player);		// 交代
+			InvalidateRect(hWnd, &line, TRUE);			//能動的に再描画する
 			return 0L;
 
 		case IDB_CORRECT:								// [正解]押した場合
@@ -435,7 +457,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			strcpy_s(buf, "CLEAR");				// クリアの内容をバッファに保存
 			send(sock, buf, strlen(buf) + 1, 0);//送信処理
 			ClearPaint(hWnd);		//画面のクリアを実行
-			InvalidateRect(hWnd, &d, TRUE);		//能動的に再描画処理を実行
+			InvalidateRect(hWnd, &line, TRUE);		//能動的に再描画処理を実行
 			return 0L;
 
 		case IDB_INCORRECT:						// [不正解]を押した場合
@@ -520,7 +542,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			FXY(0, LOWORD(lP), HIWORD(lP));                 // 線の始点として座標を記録
 			mouseFlg = TRUE;								//mouseFlagをTRUEとする
 			n++;											//カウンタを増加する
-			InvalidateRect(hWnd, &d, FALSE);				//能動的に再描画する
+			InvalidateRect(hWnd, &line, FALSE);				//能動的に再描画する
 
 		}
 		return 0L;
@@ -543,7 +565,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				}
 				n++;												//カウンタを増加
 				mouseFlg = TRUE;									//mouseFlagをTRUEとする
-				InvalidateRect(hWnd, &d, FALSE);					//能動的に再描画をする
+				InvalidateRect(hWnd, &line, FALSE);					//能動的に再描画をする
 
 			}
 			else {													// 描画領域の外なら
@@ -568,7 +590,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 					"Error", MB_OK | MB_ICONEXCLAMATION);
 				closesocket(sv_sock);		//サーバ用のソケットを閉じる
 				sv_sock = INVALID_SOCKET;	//サーバ用のソケットをINVALID_SOCKETとする
-				enable_standby();			//アプリケーション開始時の状態にする
 				return 0L;
 
 			}
@@ -583,7 +604,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				//エラーメッセージを表示する
 				MessageBox(hWnd, "WSAAsyncSelect() failed",
 					"Error", MB_OK | MB_ICONEXCLAMATION);
-				enable_standby();			//アプリケーション開始時の状態にする
 				return 0L;
 
 			}
@@ -603,7 +623,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				//エラーメッセージを表示する
 				MessageBox(hWnd, "WSAAsyncSelect() failed",
 					"Error", MB_OK | MB_ICONEXCLAMATION);
-				enable_standby();			//アプリケーション開始時の状態にする
 				return 0L;
 			}
 
@@ -633,21 +652,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 					DestroyWindow(hWndSendMSG);	//送信チャットボックスをリセットする
 					DestroyWindow(hWndRecvMSG);			//受信チャットボックスをリセットする
 					if (PlayerRuleNum == 0) {				//ルール１ならば文字と絵が使えるため
-	// 受信メッセージ表示用エディットボックス
+						// 受信メッセージ表示用エディットボックス
 						
 						hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-							WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 165, 455, 150, 70,
+							WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 190, 455, 150, 70,
 							hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 						// 送信メッセージ入力用エディットボックス
 						hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-							WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 320, 455, 150, 70,
+							WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 345, 455, 150, 70,
 							hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
 						// [送信]ボタン
 						hWndSend = CreateWindow("button", "送信",
-							WS_CHILD | WS_VISIBLE | WS_DISABLED, 480, 485, 50, 30,
+							WS_CHILD | WS_VISIBLE | WS_DISABLED, 505, 485, 50, 30,
 							hWnd, (HMENU)IDB_SEND, NULL, NULL);
-						//ColorSet(hWnd, 1);
-						//InvalidateRect(hWnd, &d, FALSE);
+						
 					}
 					else if (PlayerRuleNum == 1) {
 
@@ -663,20 +681,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 						hWndSend = CreateWindow("button", "送信",
 							WS_CHILD | WS_VISIBLE | WS_DISABLED, 325, 470, 50, 30,
 							hWnd, (HMENU)IDB_SEND, NULL, NULL);
-						//InvalidateRect(hWnd, &d, TRUE);
+						
 					}
 					else if (PlayerRuleNum == 2) {
 						//enable_color();
 						// 送信メッセージ入力用エディットボックス
 						hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-							WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 165, 455, 300, 70,
+							WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 190, 455, 300, 70,
 							hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
 						// [送信]ボタン
 						hWndSend = CreateWindow("button", "送信",
-							WS_CHILD | WS_VISIBLE | WS_DISABLED, 480, 485, 50, 30,
+							WS_CHILD | WS_VISIBLE | WS_DISABLED, 500, 485, 50, 30,
 							hWnd, (HMENU)IDB_SEND, NULL, NULL);
 					}
 					enable_player();			//子の初期状態にする
+					InvalidateRect(hWnd, &line, TRUE);			//能動的に再描画する
 					return 0L;
 
 				}
@@ -707,7 +726,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 				}
 				else if (strcmp(buf, "CLEAR") == 0) {		//描画ボックスをクリアすることを求められた場合
 					ClearPaint(hWnd);			//描画ボックスをクリアする
-					InvalidateRect(hWnd, &d, TRUE);			//能動的に再描画する
+					InvalidateRect(hWnd, &line, TRUE);			//能動的に再描画する
 					return 0L;
 
 				}
@@ -761,12 +780,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 					return 0L;
 
 				}
-				else if (strcmp(buf, "GIVEUP") == 0) {		//ギブアップ
+				else if (strcmp(buf, "GIVEUP") == 0) {		//パス
 					score_Master = 1;						//親に1点、子に1点を付与
 					score_Player = 1;
-					//相手がギブアップした旨をメッセージボックスに表示
+					//相手がパスした旨をメッセージボックスに表示
 					change(hWnd, score_Master, score_Player);//交代する
-					MessageBox(hWnd, "相手がギブアップしました",
+					MessageBox(hWnd, "相手がパスしました",
 						"Information", MB_OK | MB_ICONINFORMATION);
 					return 0L;
 
@@ -788,7 +807,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 					//座標を個別に獲得する
 					setData(flag2, x2, y2, hPenRed);		//赤ペンで描画できるようにデータを保存する
 					n++;									//カウンタを増加する
-					InvalidateRect(hWnd, &d, FALSE);		//能動的に再描画する
+					InvalidateRect(hWnd, &line, FALSE);		//能動的に再描画する
 					return 0L;
 
 				}
@@ -801,6 +820,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 			MessageBox(hWnd, "切断されました。",			//切断された旨をメッセージボックスに表示
 				"Information", MB_OK | MB_ICONINFORMATION);
 			SendMessage(hWnd, WM_COMMAND, IDB_REJECT, 0); // 切断処理発行
+
 			return 0L;
 
 		}/* end of switch (WSAGETSELECTEVENT(lP)) */
@@ -809,13 +829,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 	case WM_DESTROY:				// ウィンドウが破棄された
 		DeleteObject(hPenBlack);    // 黒ペン削除
 		DeleteObject(hPenRed);      // 赤ペン削除
-		/*
-		DeleteObject(hPenOrange);
-		DeleteObject(hPenGreen);
-		DeleteObject(hPenYellow);
-		DeleteObject(hPenBlue);
-		DeleteObject(hPenMy);
-		*/
+
 		closesocket(sock);          // ソケットを閉じる
 		PostQuitMessage(0);         // 終了処理
 		return 0L;
@@ -838,19 +852,16 @@ LRESULT CALLBACK OnPaint(HWND hWnd, UINT uMsg, WPARAM wP, LPARAM lP)
 	PAINTSTRUCT ps;						//ペイントストラクト
 
 	hdc = BeginPaint(hWnd, &ps);		//描画の開始
-	// 描画領域の初期化
-	//ColorSet(hWnd, 1);
-	//SetDCBrushColor(hdc, RGB(255, 255, 255));//背景色設定
-	//SelectObject(hdc, GetStockObject(DC_BRUSH));
-	//Rectangle(hdc, 0, 0, 1400, 865);
-	
-	MoveToEx(hdc, d.left, d.top, NULL);
-	//LineTo(hdc, d.right, d.top);		// 上横線
-	//LineTo(hdc, d.right, d.bottom);		// 右縦線
-	//LineTo(hdc, d.left, d.bottom);		// 下横線
-	//LineTo(hdc, d.left, d.top);			// 左縦線
-	//先に線を引くため、ここは使わない
 
+	MoveToEx(hdc, d.left, d.top, NULL);
+	if (rule_num == 0 || rule_num == 2) {
+		LineTo(hdc, d.right, d.top);    // 上横線
+		LineTo(hdc, d.right, d.bottom); // 右縦線
+		LineTo(hdc, d.left, d.bottom);  // 下横線
+		LineTo(hdc, d.left, d.top);		// 左縦線
+		UpdateWindow(hWnd);                                 // ウインドウ更新
+
+	}
 	for (int i = 0; i < n; i++) {		// 線を描画
 		SelectObject(hdc, colors[i]);
 		if (flag[i] == 0) {				// 開始点なら、始点を移動
@@ -876,13 +887,14 @@ LRESULT CALLBACK ClearPaint(HWND hWnd)
 	hdc = BeginPaint(hWnd, &ps);	//描画開始
 	// 描画領域の初期化
 	MoveToEx(hdc, d.left, d.top, NULL);
-	//LineTo(hdc, d.right, d.top);    // 上横線
-	//LineTo(hdc, d.right, d.bottom); // 右縦線
-	//LineTo(hdc, d.left, d.bottom);  // 下横線
-	//LineTo(hdc, d.left, d.top);		// 左縦線
+	if (rule_num == 0||rule_num==2) {		
+		LineTo(hdc, d.right, d.top);    // 上横線
+		LineTo(hdc, d.right, d.bottom); // 右縦線
+		LineTo(hdc, d.left, d.bottom);  // 下横線
+		LineTo(hdc, d.left, d.top);		// 左縦線
 
-	//ColorSet(hWnd, 1);
-
+	}
+	
 	for (int i = 0; i < n; i++) {   // 全ての情報をリセットする
 		flag[i] = 0;
 		pos[i].x = 0;
@@ -926,29 +938,7 @@ void FXY(int f3, int x3, int y3) {
 	send(sock, buf, strlen(buf) + 1, 0);
 
 }
-/*
-void ColorSet(HWND hWnd, int flag)//描画区域起動かどうかを明示する
-{
-	HDC hdc;
-	PAINTSTRUCT ps;
 
-	hdc = BeginPaint(hWnd, &ps);
-	if (flag == 0)//描画要らない
-	{
-		SetDCBrushColor(hdc, RGB(255, 255, 255));
-		SelectObject(hdc, GetStockObject(DC_BRUSH));
-		Rectangle(hdc, d.left, d.top, d.right, d.bottom);
-
-	}
-	else if (flag == 1)//描画要る
-	{
-		SetDCBrushColor(hdc, RGB(240, 240, 240));
-		SelectObject(hdc, GetStockObject(DC_BRUSH));
-		Rectangle(hdc, d.left, d.top, d.right, d.bottom);
-	}
-
-}
-*/
 //１～３の値をランダムに返す
 int randAtoC() {
 	srand(time(0));
@@ -1002,7 +992,11 @@ void set_score(int x, int y) {
 
 //ゲーム開始時に実行
 void game_start(HWND hWnd) {
-
+	DestroyWindow(hWndHostName);
+	DestroyWindow(hWndWelcome);
+	DestroyWindow(hWndHost);
+	DestroyWindow(hWndStart);
+	DestroyWindow(hWndBack);
 	turn = 0;				//手番を0にする
 
 	// 制約条件用エディットボックス
@@ -1034,12 +1028,7 @@ void game_start(HWND hWnd) {
 	hFont = CreateFont(50, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, SHIFTJIS_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
 	SendMessage(hWndScore_pl2, WM_SETFONT, WPARAM(hFont), TRUE);
 
-	/*
-	// [切断要請]ボタン
-	hWndBack = CreateWindow("button", "切断要請",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 275, 70, 90, 25,
-		hWnd, (HMENU)IDB_REJECTORDER, NULL, NULL);
-		*/
+	
 	// [切断]ボタン
 	hWndReject = CreateWindow("button", "切断",
 		WS_CHILD | WS_VISIBLE | WS_DISABLED, 550, 10, 124, 30,
@@ -1048,22 +1037,18 @@ void game_start(HWND hWnd) {
 	hWndChange = CreateWindow("button", "交代",
 		WS_CHILD | WS_VISIBLE | WS_DISABLED, 550, 44, 60, 35,
 		hWnd, (HMENU)IDB_CHANGE, NULL, NULL);
-	// [ギブアップ]ボタン
-	hWndGiveup = CreateWindow("button", "放棄",
+	// [パス]ボタン
+	hWndGiveup = CreateWindow("button", "パス",
 		WS_CHILD | WS_VISIBLE | WS_DISABLED, 620, 44, 60, 35,
 		hWnd, (HMENU)IDB_GIVEUP, NULL, NULL);
 
-	// [クリア]ボタン
-	hWndClear = CreateWindow("button", "クリア",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 17, 156, 66, 41,
-		hWnd, (HMENU)IDB_CLEAR, NULL, NULL);
 	// [正解]ボタン
 	hWndCorrect = CreateWindow("button", "正解",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 17, 222, 66, 41,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 17, 156, 66, 41,
 		hWnd, (HMENU)IDB_CORRECT, NULL, NULL);
 	// [不正解]ボタン
 	hWndIncorrect = CreateWindow("button", "不正解",
-		WS_CHILD | WS_VISIBLE | WS_DISABLED, 17, 288, 66, 41,
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 17, 222, 66, 41,
 		hWnd, (HMENU)IDB_INCORRECT, NULL, NULL);
 	// [指摘]ボタン
 	hWndPointout = CreateWindow("button", "指摘",
@@ -1077,10 +1062,13 @@ void game_start(HWND hWnd) {
 	hWndDenial = CreateWindow("button", "否認",
 		WS_CHILD | WS_VISIBLE | WS_DISABLED, 600, 288, 66, 41,
 		hWnd, (HMENU)IDB_DENIAL, NULL, NULL);
-
+	// [クリア]ボタン
+	hWndClear = CreateWindow("button", "クリア",
+		WS_CHILD | WS_VISIBLE | WS_DISABLED, 600, 354, 66, 41,
+		hWnd, (HMENU)IDB_CLEAR, NULL, NULL);
 	// ヘルプメッセージ用エディットボックス
 	hWndHelp = CreateWindowEx(WS_EX_CLIENTEDGE, "edit", "",
-		WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 540, 400, 130, 100,
+		WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 20, 288, 130, 200,
 		hWnd, (HMENU)IDF_HELP, NULL, NULL);
 
 
@@ -1103,7 +1091,7 @@ int change(HWND hWnd, int a, int b) {
 	ChatReset(hWndQuestion);		//お題をリセットする
 	ChatReset(hWndHelp);                    //ヘルプメッセージボックスをリセットする
 	ClearPaint(hWnd);				//描画ボックスをクリアする
-	InvalidateRect(hWnd, &d, TRUE);	//能動的に再描画する
+	InvalidateRect(hWnd, &window_size, TRUE);	//能動的に再描画する
 
 
 
@@ -1138,15 +1126,15 @@ int change(HWND hWnd, int a, int b) {
 			//enable_color();
 			// 受信メッセージ表示用エディットボックス
 			hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 165, 455, 150, 70,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 190, 455, 150, 70,
 				hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 			// 送信メッセージ入力用エディットボックス
 			hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 320, 455, 150, 70,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 345, 455, 150, 70,
 				hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
 			// [送信]ボタン
 			hWndSend = CreateWindow("button", "送信",
-				WS_CHILD | WS_VISIBLE | WS_DISABLED, 480, 485, 50, 30,
+				WS_CHILD | WS_VISIBLE | WS_DISABLED, 505, 485, 50, 30,
 				hWnd, (HMENU)IDB_SEND, NULL, NULL);
 			EnableWindow(hWndSendMSG, TRUE);//送信用チャットボックス、
 			EnableWindow(hWndSend, TRUE);	//[送信]ボタン、
@@ -1179,7 +1167,7 @@ int change(HWND hWnd, int a, int b) {
 			SetWindowText(hWndHelp, "絵でお題を表現してください。\r\n絵を消したい場合はクリアを押してください。");
 			// 受信メッセージ表示用エディットボックス
 			hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 165, 455, 300, 70,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 190, 455, 300, 70,
 				hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 			EnableWindow(hWndClear, TRUE);	// [クリア]ボタンを有効にし、
 			//ColorSet(hWnd, 1);
@@ -1206,18 +1194,17 @@ int change(HWND hWnd, int a, int b) {
 // 受信メッセージ表示用エディットボックス
 			//enable_color();
 			hWndRecvMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 165, 455, 150, 70,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY, 190, 455, 150, 70,
 				hWnd, (HMENU)IDF_RECVMSG, NULL, NULL);
 			// 送信メッセージ入力用エディットボックス
 			hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 320, 455, 150, 70,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 345, 455, 150, 70,
 				hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
 			// [送信]ボタン
 			hWndSend = CreateWindow("button", "送信",
-				WS_CHILD | WS_VISIBLE | WS_DISABLED, 480, 485, 50, 30,
+				WS_CHILD | WS_VISIBLE | WS_DISABLED, 505, 485, 50, 30,
 				hWnd, (HMENU)IDB_SEND, NULL, NULL);
-			//ColorSet(hWnd, 1);
-			//InvalidateRect(hWnd, &d, FALSE);
+			
 		}
 		else if (PlayerRuleNum == 1) {
 
@@ -1233,21 +1220,20 @@ int change(HWND hWnd, int a, int b) {
 			hWndSend = CreateWindow("button", "送信",
 				WS_CHILD | WS_VISIBLE | WS_DISABLED, 325, 470, 50, 30,
 				hWnd, (HMENU)IDB_SEND, NULL, NULL);
-			//InvalidateRect(hWnd, &d, TRUE);
 		}
 		else if (PlayerRuleNum == 2) {
 			//enable_color();
 			// 送信メッセージ入力用エディットボックス
 			hWndSendMSG = CreateWindowEx(WS_EX_CLIENTEDGE, TEXT("edit"), TEXT(""),
-				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 165, 455, 300, 70,
+				WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_DISABLED, 190, 455, 300, 70,
 				hWnd, (HMENU)IDF_SENDMSG, NULL, NULL);
 			// [送信]ボタン
 			hWndSend = CreateWindow("button", "送信",
-				WS_CHILD | WS_VISIBLE | WS_DISABLED, 480, 485, 50, 30,
+				WS_CHILD | WS_VISIBLE | WS_DISABLED, 500, 485, 50, 30,
 				hWnd, (HMENU)IDB_SEND, NULL, NULL);
 		}
 		enable_player();			//子の初期状態にする
-		SetWindowText(hWndHelp, "相手が何を表現しているか答えてください。\r\nわからない場合はギブアップを押してください。");
+		SetWindowText(hWndHelp, "相手が何を表現しているか答えてください。\r\nわからない場合はパスを押してください。");
 
 	}
 
@@ -1303,7 +1289,6 @@ int score_judge(HWND hWnd) {
 
 	FlagPlayer = 0;		//親と子をどちらも0とし
 	turn = 0;			//手番もリセット
-	enable_end();		//終了状態となって終わる
 	return 0;
 
 }
@@ -1444,43 +1429,7 @@ BOOL SockAccept(HWND hWnd)
 }
 
 
-void enable_wait() {
-	EnableWindow(hWndHost, FALSE);	// [HostName]
-	EnableWindow(hWndConnect, FALSE);	// [接続]    
-	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
-	EnableWindow(hWndReject, TRUE);	    // [切断]    
-	//EnableWindow(hWndBack, FALSE);	// [切断要請]
-	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
-	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
-	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
-	EnableWindow(hWndConsent, FALSE);	// [承諾]    
-	EnableWindow(hWndPointout, FALSE);	// [指摘]    
-	EnableWindow(hWndDenial, FALSE);	// [否認]   
-	EnableWindow(hWndSend, FALSE);	// [送信]  
-	EnableWindow(hWndChange, FALSE);	// [交代]
-	EnableWindow(hWndClear, FALSE);	// [クリア]
-}
 
-void enable_standby() {
-
-
-	EnableWindow(hWndHost, TRUE);	    // [HostName]
-	EnableWindow(hWndConnect, TRUE);	    // [接続]    
-	EnableWindow(hWndAccept, TRUE);	    // [接続待ち]
-	EnableWindow(hWndReject, FALSE);	// [切断]    
-	//EnableWindow(hWndBack, FALSE);	// [切断要請]
-	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
-	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
-	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
-	EnableWindow(hWndConsent, FALSE);	// [承諾]    
-	EnableWindow(hWndPointout, FALSE);	// [指摘]    
-	EnableWindow(hWndDenial, FALSE);	// [否認]   
-	EnableWindow(hWndSend, FALSE);	// [送信]  
-	EnableWindow(hWndChange, FALSE);	// [交代]
-	EnableWindow(hWndClear, FALSE);	// [クリア]
-}
 
 void enable_master() {
 	EnableWindow(hWndSendMSG, FALSE);	// [送信用チャットボックス]
@@ -1488,9 +1437,8 @@ void enable_master() {
 	EnableWindow(hWndConnect, FALSE);	// [接続]    
 	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
 	EnableWindow(hWndReject, TRUE);	    // [切断]    
-	//EnableWindow(hWndBack, TRUE);	    // [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndGiveup, FALSE);	// [パス]
 	EnableWindow(hWndCorrect, TRUE);	    // [正解ボタン]    
 	EnableWindow(hWndIncorrect, TRUE);	    // [不正解ボタン]
 	EnableWindow(hWndConsent, FALSE);	// [承諾]    
@@ -1507,9 +1455,8 @@ void enable_player() {
 	EnableWindow(hWndConnect, FALSE);	// [接続]    
 	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
 	EnableWindow(hWndReject, TRUE);	    // [切断]    
-	//EnableWindow(hWndBack, TRUE);	    // [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, TRUE);	    // [ギブアップ]
+	EnableWindow(hWndGiveup, TRUE);	    // [パス]
 	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
 	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
 	EnableWindow(hWndConsent, FALSE);	// [承諾]    
@@ -1520,24 +1467,6 @@ void enable_player() {
 	EnableWindow(hWndClear, FALSE);	// [クリア]
 }
 
-void enable_end() {
-	EnableWindow(hWndSendMSG, FALSE);	// [送信用チャットボックス]
-	EnableWindow(hWndHost, FALSE);	// [HostName]
-	EnableWindow(hWndConnect, FALSE);	// [接続]    
-	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
-	EnableWindow(hWndReject, TRUE);	    // [切断]    
-	//EnableWindow(hWndBack, TRUE);	    // [切断要請]
-	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
-	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
-	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
-	EnableWindow(hWndConsent, FALSE);	// [承諾]    
-	EnableWindow(hWndPointout, FALSE);	// [指摘]    
-	EnableWindow(hWndDenial, FALSE);	// [否認]   
-	EnableWindow(hWndSend, FALSE);	// [送信]  
-	EnableWindow(hWndChange, FALSE);	// [交代]
-	EnableWindow(hWndClear, FALSE);	// [クリア]
-}
 
 void enable_correct() {
 	EnableWindow(hWndSendMSG, FALSE);	// [送信用チャットボックス]
@@ -1545,9 +1474,8 @@ void enable_correct() {
 	EnableWindow(hWndConnect, FALSE);	// [接続]    
 	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
 	EnableWindow(hWndReject, TRUE);	    // [切断]    
-	//EnableWindow(hWndBack, TRUE);	    // [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndGiveup, FALSE);	// [パス]
 	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
 	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
 	EnableWindow(hWndConsent, FALSE);	// [承諾]    
@@ -1564,9 +1492,8 @@ void enable_pause() {
 	EnableWindow(hWndConnect, FALSE);	// [接続]    
 	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
 	EnableWindow(hWndReject, TRUE);	    // [切断]    
-	//EnableWindow(hWndBack, TRUE);     // [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndGiveup, FALSE);	// [パス]
 	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
 	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
 	EnableWindow(hWndConsent, FALSE);	// [承諾]    
@@ -1583,15 +1510,13 @@ void enable_pointout_master() {
 	EnableWindow(hWndConnect, FALSE);	// [接続]    
 	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
 	EnableWindow(hWndReject, TRUE);	    // [切断]    
-	//EnableWindow(hWndBack, TRUE);	    // [切断要請]
 	DrawableFlag = 1;
-	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndGiveup, FALSE);	// [パス]
 	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
 	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
 	EnableWindow(hWndConsent, TRUE);	    // [承諾]    
 	EnableWindow(hWndPointout, FALSE);	// [指摘]    
 	EnableWindow(hWndDenial, TRUE);	    // [否認]   
-	EnableWindow(hWndSend, TRUE);	    // [送信]  
 	EnableWindow(hWndChange, FALSE);	// [交代]
 	EnableWindow(hWndClear, FALSE);	// [クリア]
 }
@@ -1602,9 +1527,8 @@ void enable_pointout_player() {
 	EnableWindow(hWndConnect, FALSE);	// [接続]    
 	EnableWindow(hWndAccept, FALSE);	// [接続待ち]
 	EnableWindow(hWndReject, TRUE);	    // [切断]    
-	//EnableWindow(hWndBack, TRUE);     // [切断要請]
 	DrawableFlag = 0;
-	EnableWindow(hWndGiveup, FALSE);	// [ギブアップ]
+	EnableWindow(hWndGiveup, FALSE);	// [パス]
 	EnableWindow(hWndCorrect, FALSE);	// [正解ボタン]    
 	EnableWindow(hWndIncorrect, FALSE);	// [不正解ボタン]
 	EnableWindow(hWndConsent, FALSE);	// [承諾]    
@@ -1614,14 +1538,3 @@ void enable_pointout_player() {
 	EnableWindow(hWndChange, FALSE);	// [交代]
 	EnableWindow(hWndClear, FALSE);	// [クリア]
 }
-/*
-void enable_color()
-{
-	EnableWindow(hWndBlack, TRUE);
-	EnableWindow(hWndRed, TRUE);
-	EnableWindow(hWndOrange, TRUE);
-	EnableWindow(hWndGreen, TRUE);
-	EnableWindow(hWndYellow, TRUE);
-	EnableWindow(hWndBlue, TRUE);
-}
-*/
